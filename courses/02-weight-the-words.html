@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- social:start -->
+<meta name="description" content="Session 2 of 6. Counts, TF-IDF and bigrams on 3,000 real CFPB complaint narratives: why raw counts let the common words win, how idf pushes them down, and how big the vocabulary should be.">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Learn with Phoebe">
+<meta property="og:title" content="Weight the words - learn NLP and text analytics with phoebe">
+<meta property="og:description" content="Session 2 of 6. Counts, TF-IDF, bigrams and vocabulary size on real complaint text, computed in your browser.">
+<meta property="og:url" content="https://phoebefu6.github.io/learn-nlp-text-analytics-with-phoebe/courses/02-weight-the-words.html">
+<meta property="og:image" content="https://phoebefu6.github.io/learn-nlp-text-analytics-with-phoebe/assets/og-cover.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Weight the words - learn NLP and text analytics with phoebe">
+<meta name="twitter:description" content="Session 2 of 6. Counts, TF-IDF, bigrams and vocabulary size on real complaint text.">
+<meta name="twitter:image" content="https://phoebefu6.github.io/learn-nlp-text-analytics-with-phoebe/assets/og-cover.png">
+<!-- social:end -->
+<title>Session 2 · Weight the words - learn NLP and text analytics with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=2">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-nlp-text-analytics-with-phoebe</a> / Session 2 of 6</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn NLP &amp; Text Analytics with Phoebe · Session 2 of 6</div>
+    <h1>Weight the words: <span class="accent">counts, TF-IDF and pairs</span></h1>
+    <p class="sub">Last session built the table. Tonight we decide what goes in the cells. Count the words in Ledgerly's six complaint queues and every queue looks identical: "xxxx, i, the, to, my". The fix is a weighting that rewards a word for being rare across the pile and frequent in this complaint, plus a little word order bought back with pairs. Every choice has a cost you can measure.</p>
+    <div class="chip-row">
+      <span class="chip level">🟡 Core</span>
+      <span class="chip audience">Analysts and data scientists handed a pile of free text</span>
+      <span class="chip audience">Light Python, everything also runs in the page</span>
+      <span class="chip time">45 min</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Welcome</span>
+      <span class="a2" style="flex:5">3-18 · Counts, TF-IDF, n-grams</span>
+      <span class="a3" style="flex:7">18-40 · Build-along: top words per queue</span>
+      <span class="a4" style="flex:1">40-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>Where we start</h2>
+    </div>
+    <p class="lede">Ledgerly's corpus card says what the 3,000 complaints are and how they were cut into 5,250 columns. A cell still holds a plain count. Counts are honest and they are also loud: the words that appear everywhere drown the words that tell one queue from another. Tonight you watch that happen on real CFPB narratives, then fix it in two moves (TF-IDF, then pairs of words with a frequency floor) and write down which weighting Ledgerly uses and why (Constructed Ledgerly example; the complaints are real).</p>
+
+    <div class="legend">
+      <span class="pill">🎫 Clear all three quiz questions to stamp your passport</span>
+      <span class="pill">Live = presented in the 45 minutes</span>
+      <span class="pill">Self-study = the full depth, after class</span>
+      <span class="pill">★ Build-along = do it yourself, in the page</span>
+    </div>
+
+    <div class="callout win">
+      <p><strong>★ What you walk out with tonight.</strong> Page 2 of Ledgerly's text playbook: the vocabulary and weighting choice, with a reason for each switch (stop words, redaction marks, bigrams, the minimum document frequency, the idf formula and the normalisation). Plus the ability to compute one TF-IDF cell by hand, so a number on a dashboard never has to be taken on trust.</p>
+    </div>
+  </section>
+
+  <section class="section" id="part-1">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers counts and the sparse vector</span>
+      <h2>Raw counts let the common words win</h2>
+      <span class="tag concept">5 min live</span>
+    </div>
+    <p class="lede">The simplest cell value is how many times the word appears in the complaint. Sum those counts over a queue, sort, and you expect to see what each queue is about. You see grammar instead. Here are the six queues side by side.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 316" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Six panels, one per queue: credit reporting, debt collection, credit card, checking or savings, student loan, vehicle loan or lease. Under raw counts with stop words kept, every panel shows the same seven top words, xxxx, i, the, to, my, a, and, in varying order. The product words of each queue, such as credit and report, debt and collection, card and late, account and checking, loan and mohela, car and vehicle, sit at rank 8 or lower.">
+        <defs>
+          <filter id="s2aSk" x="-3%" y="-3%" width="106%" height="106%"><feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="31" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.4" xChannelSelector="R" yChannelSelector="G"/></filter>
+          <pattern id="s2aHc" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(-38)"><line x1="0" y1="0" x2="0" y2="7" stroke="#592A22" stroke-width="1" opacity=".5"/></pattern>
+          <marker id="s2aAr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M1 1 L9 5 L1 9" fill="none" stroke="#2B1C18" stroke-width="1.6" stroke-linecap="round"/></marker>
+        </defs>
+        <style>
+          .s2aH { font: 800 12px Inter, sans-serif; fill: #2B1C18; }
+          .s2aL { font: 600 12px Inter, sans-serif; fill: #2B1C18; }
+          .s2aS { font: 400 11px Inter, sans-serif; fill: #5E4A44; }
+          .s2aA { font: 700 11px Inter, sans-serif; fill: #592A22; }
+          .s2aN { font: 400 12px Inter, sans-serif; fill: #5E4A44; }
+        </style>
+
+        <text class="s2aH" x="30" y="26">RAW COUNTS, STOP WORDS KEPT: THE TOP 7 WORDS OF EACH QUEUE</text>
+
+        <g filter="url(#s2aSk)" fill="none" stroke="#2B1C18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="24" y="44" width="262" height="104" rx="10" transform="rotate(-0.5 155 96)" fill="#FFFFFF"/>
+          <rect x="309" y="44" width="262" height="104" rx="10" transform="rotate(0.4 440 96)" fill="#FFFFFF"/>
+          <rect x="594" y="44" width="262" height="104" rx="10" transform="rotate(-0.4 725 96)" fill="#FFFFFF"/>
+          <rect x="24" y="162" width="262" height="104" rx="10" transform="rotate(0.4 155 214)" fill="#FFFFFF"/>
+          <rect x="309" y="162" width="262" height="104" rx="10" transform="rotate(-0.5 440 214)" fill="#FFFFFF"/>
+          <rect x="594" y="162" width="262" height="104" rx="10" transform="rotate(0.5 725 214)" fill="#FFFFFF"/>
+
+          <rect x="40" y="76" width="230" height="24" rx="12" fill="#F8EEEB"/>
+          <rect x="325" y="76" width="230" height="24" rx="12" fill="#F8EEEB"/>
+          <rect x="610" y="76" width="230" height="24" rx="12" fill="#F8EEEB"/>
+          <rect x="40" y="194" width="230" height="24" rx="12" fill="#F8EEEB"/>
+          <rect x="325" y="194" width="230" height="24" rx="12" fill="#F8EEEB"/>
+          <rect x="610" y="194" width="230" height="24" rx="12" fill="#F8EEEB"/>
+
+          <rect x="40" y="110" width="230" height="26" rx="8" fill="#A9C8E3"/>
+          <rect x="325" y="110" width="230" height="26" rx="8" fill="#A9C8E3"/>
+          <rect x="610" y="110" width="230" height="26" rx="8" fill="#A9C8E3"/>
+          <rect x="40" y="228" width="230" height="26" rx="8" fill="#A9C8E3"/>
+          <rect x="325" y="228" width="230" height="26" rx="8" fill="#A9C8E3"/>
+          <rect x="610" y="228" width="230" height="26" rx="8" fill="#A9C8E3"/>
+        </g>
+
+        <text class="s2aH" x="40" y="66">Credit reporting</text>
+        <text class="s2aH" x="325" y="66">Debt collection</text>
+        <text class="s2aH" x="610" y="66">Credit card</text>
+        <text class="s2aH" x="40" y="184">Checking or savings</text>
+        <text class="s2aH" x="325" y="184">Student loan</text>
+        <text class="s2aH" x="610" y="184">Vehicle loan or lease</text>
+
+        <text class="s2aS" x="155" y="93" text-anchor="middle">xxxx · i · the · to · my · a · and</text>
+        <text class="s2aS" x="440" y="93" text-anchor="middle">xxxx · i · the · to · my · a · and</text>
+        <text class="s2aS" x="725" y="93" text-anchor="middle">xxxx · i · the · to · my · a · and</text>
+        <text class="s2aS" x="155" y="211" text-anchor="middle">xxxx · i · the · to · my · a · and</text>
+        <text class="s2aS" x="440" y="211" text-anchor="middle">xxxx · i · the · to · my · a · and</text>
+        <text class="s2aS" x="725" y="211" text-anchor="middle">xxxx · i · the · to · my · a · and</text>
+
+        <text class="s2aL" x="52" y="128">credit, report: below the top 7</text>
+        <text class="s2aL" x="337" y="128">debt, collection: below the top 7</text>
+        <text class="s2aL" x="622" y="128">card, late: below the top 7</text>
+        <text class="s2aL" x="52" y="246">account, checking: below the top 7</text>
+        <text class="s2aL" x="337" y="246">loan, mohela: below the top 7</text>
+        <text class="s2aL" x="622" y="246">car, vehicle: below the top 7</text>
+
+        <text class="s2aA" x="30" y="286">same seven words in every queue, order varies</text>
+        <text class="s2aN" x="30" y="304">Counts reward how often a word appears, not whether it is rare elsewhere. The queues become indistinguishable.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - under raw counts the top of every queue is the same seven words; what makes a queue different starts at rank 8</figcaption>
+    </figure>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>Raw counts: honest, loud and the same everywhere<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Sum the counts over all complaints in a queue, keep stop words and redaction marks, and every one of the six queues has the same top seven: <code>xxxx</code>, i, the, to, my, a, and, in varying order. That is Zipf from session 1 showing up again: the head of the distribution is grammar and redaction, and it is the same head for credit reporting and for car loans.</p>
+        <p>A count answers "how much of this complaint is this word?". It does not answer "how unusual is it that this complaint uses this word?". For routing, the second question is the one that carries signal. "Debt" in a complaint is news; "the" never is.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The sparse vector: 5,250 cells, at most 50 filled<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Each complaint is now a vector: one number per vocabulary word, 5,250 numbers long. Because each complaint keeps at most 50 tokens, at most 50 of those numbers are non-zero; more than 99% are zero. Libraries store only the non-zero cells (a sparse matrix), which is why a 3,000 by 5,250 table fits easily in memory.</p>
+        <p>Every weighting in this session changes the <em>values</em> of the non-zero cells and never turns a zero into a non-zero. A word the complaint did not use stays at zero under counts, TF-IDF and every variant. Weighting decides how loud each present word is, not which words are present.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Binary or count: does saying "late" three times matter?<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>A binary cell records only presence: 1 if the word appears, 0 if not. A count cell records how often. For short, focused texts the two often behave alike. For longer narratives, repetition can mean emphasis ("late, late, late again") or just a writing habit, and counts let one repeated word dominate a row.</p>
+        <p>There is a middle road you will meet in Part 2: grow the cell with the logarithm of the count, so the second "late" adds less than the first. Manning, Raghavan and Schutze give the same family of choices for term weighting (Introduction to Information Retrieval, 2008, section 6.2.2). None is right in general; the bench in session 4 is where Ledgerly measures it.</p>
+      </div>
+    </details>
+
+    <div class="callout example">
+      <p><span class="ex-pill">Real world</span> <strong>The word cloud that never changed.</strong> A service team publishes a weekly "top words in customer complaints" chart. Every week it says "account, the, i, my, called". Leadership stops reading it within a month. Nothing was wrong with the counting; the chart answered "what is common?" when the question was "what is new or distinctive this week?". That second question needs a weighting that knows what is common everywhere.</p>
+    </div>
+  </section>
+
+  <section class="section" id="part-2">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers tf, idf, l2 normalisation and two conventions</span>
+      <h2>TF-IDF: rare across documents, frequent in this one</h2>
+      <span class="tag concept">6 min live</span>
+    </div>
+    <p class="lede">TF-IDF multiplies two numbers. Term frequency (tf) says how much this complaint uses the word. Inverse document frequency (idf) says how rare the word is across all complaints. A word scores high only when it is both. The curve below is the whole idea: the more complaints a word appears in, the less each appearance is worth.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 376" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The smooth idf curve, idf equals ln of (1 plus n) over (1 plus df), plus 1, with n 3,000. Document frequency on a log axis from 1 to 3,000, idf from 1 to about 8. Six real words placed on the curve: scam df 11 idf 6.522; repossessed df 24 idf 5.788; mohela df 72 idf 4.716; card df 328 idf 3.211; credit df 1,218 idf 1.901; the df 2,331 idf 1.252. Side notes: a word in every complaint falls toward idf 1, never 0; zelle has df 0 and no column at all.">
+        <defs>
+          <filter id="s2bSk" x="-3%" y="-3%" width="106%" height="106%"><feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="37" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.4" xChannelSelector="R" yChannelSelector="G"/></filter>
+          <pattern id="s2bHc" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(-38)"><line x1="0" y1="0" x2="0" y2="7" stroke="#592A22" stroke-width="1" opacity=".5"/></pattern>
+          <marker id="s2bAr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M1 1 L9 5 L1 9" fill="none" stroke="#2B1C18" stroke-width="1.6" stroke-linecap="round"/></marker>
+        </defs>
+        <style>
+          .s2bH { font: 800 12px Inter, sans-serif; fill: #2B1C18; }
+          .s2bL { font: 600 12px Inter, sans-serif; fill: #2B1C18; }
+          .s2bS { font: 400 11px Inter, sans-serif; fill: #5E4A44; }
+          .s2bB { font: 800 11px Inter, sans-serif; fill: #1E4566; }
+          .s2bA { font: 700 11px Inter, sans-serif; fill: #592A22; }
+          .s2bN { font: 400 12px Inter, sans-serif; fill: #5E4A44; }
+        </style>
+
+        <text class="s2bH" x="30" y="24">HOW MUCH ONE APPEARANCE IS WORTH, BY HOW MANY COMPLAINTS USE THE WORD</text>
+        <text class="s2bA" x="30" y="46">idf</text>
+
+        <g filter="url(#s2bSk)" fill="none" stroke="#2B1C18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M84 56 L84 308 L540 308" stroke-width="1.5"/>
+          <path d="M90 80.6 L127.6 92.8 L177.4 113.6 L215 131.7 L252.6 151.1 L302.4 177.8 L340 198.3 L377.6 218.9 L427.4 246.3 L465 267.1 L502.6 287.8 L524.6 300" stroke="#592A22" stroke-width="2.4"/>
+          <circle cx="220.2" cy="134.3" r="4.5" fill="#592A22"/>
+          <circle cx="262.5" cy="156.4" r="4.5" fill="#592A22"/>
+          <circle cx="322.2" cy="188.5" r="4.5" fill="#592A22"/>
+          <circle cx="404.5" cy="233.7" r="4.5" fill="#592A22"/>
+          <circle cx="475.7" cy="273" r="4.5" fill="#592A22"/>
+          <circle cx="510.9" cy="292.4" r="4.5" fill="#592A22"/>
+          <rect x="600" y="52" width="250" height="78" rx="10" transform="rotate(-0.5 725 91)" fill="#A9C8E3"/>
+          <rect x="600" y="144" width="250" height="78" rx="10" transform="rotate(0.5 725 183)" fill="#FFFFFF"/>
+          <rect x="600" y="236" width="250" height="78" rx="10" transform="rotate(-0.4 725 275)" fill="#F8EEEB"/>
+        </g>
+
+        <text class="s2bS" x="78" y="304" text-anchor="end">1</text>
+        <text class="s2bS" x="78" y="214" text-anchor="end">4</text>
+        <text class="s2bS" x="78" y="124" text-anchor="end">7</text>
+        <text class="s2bS" x="90" y="326" text-anchor="middle">1</text>
+        <text class="s2bS" x="215" y="326" text-anchor="middle">10</text>
+        <text class="s2bS" x="340" y="326" text-anchor="middle">100</text>
+        <text class="s2bS" x="465" y="326" text-anchor="middle">1,000</text>
+        <text class="s2bA" x="310" y="344" text-anchor="middle">document frequency df: complaints containing the word (log)</text>
+
+        <text class="s2bL" x="210" y="152" text-anchor="end">scam 6.522</text>
+        <text class="s2bL" x="252" y="174" text-anchor="end">repossessed 5.788</text>
+        <text class="s2bL" x="312" y="206" text-anchor="end">mohela 4.716</text>
+        <text class="s2bL" x="394" y="252" text-anchor="end">card 3.211</text>
+        <text class="s2bL" x="466" y="291" text-anchor="end">credit 1.901</text>
+        <text class="s2bL" x="522" y="280">the 1.252</text>
+
+        <text class="s2bH" x="614" y="76">Smooth idf (scikit-learn)</text>
+        <text class="s2bL" x="614" y="98">idf = ln((1+n) / (1+df)) + 1</text>
+        <text class="s2bL" x="614" y="118">n = 3,000 complaints</text>
+        <text class="s2bH" x="614" y="168">In almost every complaint</text>
+        <text class="s2bS" x="614" y="188">idf falls toward 1, never to 0</text>
+        <text class="s2bL" x="614" y="208">the: df 2,331, idf 1.252</text>
+        <text class="s2bH" x="614" y="260">Not in the vocabulary</text>
+        <text class="s2bL" x="614" y="280">zelle: df 0, no column</text>
+        <text class="s2bS" x="614" y="300">nothing to weight, nothing to find</text>
+
+        <text class="s2bN" x="30" y="366">Real words from the 3,000 complaints. One "scam" is worth over five times one "the".</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - idf falls as a word spreads across more complaints: "scam" is worth 6.522 per appearance, "the" only 1.252</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The smooth idf, on Ledgerly's real words<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Document frequency (df) is the number of complaints that contain the word at least once. scikit-learn's default idf is <code>ln((1+n)/(1+df)) + 1</code>, where n is the number of documents (the guide writes "log"; the code uses the natural log). The two "+1" inside the fraction act as if one extra document contained every word, so nothing divides by zero; the "+1" outside keeps a word that appears everywhere from being zeroed out entirely.</p>
+        <table class="clean">
+          <thead><tr><th>Word</th><th>Complaints containing it (df of 3,000)</th><th>Smooth idf</th></tr></thead>
+          <tbody>
+            <tr><td>i</td><td>2,567</td><td>1.156</td></tr>
+            <tr><td>the</td><td>2,331</td><td>1.252</td></tr>
+            <tr><td>xxxx</td><td>1,966</td><td>1.422</td></tr>
+            <tr><td>credit</td><td>1,218</td><td>1.901</td></tr>
+            <tr><td>report</td><td>647</td><td>2.533</td></tr>
+            <tr><td>card</td><td>328</td><td>3.211</td></tr>
+            <tr><td>debt</td><td>300</td><td>3.300</td></tr>
+            <tr><td>loan</td><td>287</td><td>3.344</td></tr>
+            <tr><td>mohela</td><td>72</td><td>4.716</td></tr>
+            <tr><td>repossessed</td><td>24</td><td>5.788</td></tr>
+            <tr><td>scam</td><td>11</td><td>6.522</td></tr>
+            <tr><td>zelle</td><td>0</td><td>absent: no column</td></tr>
+          </tbody>
+        </table>
+        <p>Read the table as a price list. One "scam" is worth more than five appearances of "the". "Mohela" (a federal student loan servicer) is rare overall and concentrated in one queue, which is exactly what a routing feature should be.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Then divide by the row's length (l2 normalisation)<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>After multiplying each count by its idf, scikit-learn divides the whole row by its length: the square root of the sum of squared values. The result is a row whose length is exactly 1. Its defaults, from the TfidfTransformer documentation, are <code>norm='l2'</code>, <code>use_idf=True</code>, <code>smooth_idf=True</code>, <code>sublinear_tf=False</code>.</p>
+        <p>Normalising makes a long complaint and a short complaint comparable: a narrative that says "card" twice in 20 words should not lose to one that says it three times in 50. It also shrinks every value below 1, which matters for some models. Hold that thought: in session 4, TF-IDF with naive Bayes scores 0.608 on the holdout while plain counts with naive Bayes score 0.762.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Why TF-IDF still leads with xxxx, i and the<span class="mini">1 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Switch the widget in the build-along to TF-IDF on raw tokens and the top of each queue is still <code>xxxx</code>, i, the. That surprises people. idf pushes those words down per appearance, but each complaint uses them many times, and the smooth idf never goes below 1. A small multiplier on a big count still beats a big multiplier on a count of one or zero. TF-IDF demotes the common words; it does not delete them. Removing them is a separate decision (stop words, redaction marks), and Part 3 makes it.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Two conventions: scikit-learn's and the textbook's<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Jurafsky and Martin's current draft defines tf as <code>1 + log10(count)</code> for a word that appears (0 otherwise) and idf as <code>log10(N/df)</code> (Speech and Language Processing, 2026 draft, 3rd ed., ch 11, equations 11.4 to 11.6). A footnote notes that <code>log10(count+1)</code> was "used in earlier editions". Manning, Raghavan and Schutze define tf-idf weighting in Introduction to Information Retrieval (2008), section 6.2.2.</p>
+        <p>The two conventions disagree at the edges. Under the textbook idf, a word in every document gets idf 0 and vanishes; under scikit-learn's smooth idf it gets about 1 and stays. Worked example on Ledgerly's counts: the textbook idf of "the" is log10(3,000 / 2,331) = 0.110, of "credit" log10(3,000 / 1,218) = 0.391, of "scam" log10(3,000 / 11) = 2.436. The ranking of words is the same; the size of the gap between common and rare is not.</p>
+        <p>scikit-learn can use the textbook's tf idea too: <code>sublinear_tf=True</code> replaces a count with 1 + log(count), so the third "late" adds less than the first. It is off by default. Whichever convention you use, write it on the playbook page: two teams quoting "the TF-IDF score" for the same complaint can be quoting different numbers.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Cosine: the comparison TF-IDF was made for<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Once every row has length 1, the dot product of two rows is their cosine similarity: 1 when they use the same words in the same proportions, 0 when they share no words. Jurafsky and Martin put it plainly: "By far the most common similarity metric is the cosine" (2026 draft, ch 5). TF-IDF plus cosine is the classic way to ask "which complaints look like this one?", and session 5 compares it with BM25 for search.</p>
+        <p>Because idf has already turned down the common words, two complaints are judged similar for sharing "repossessed" and "dealer", not for sharing "the" and "my". That is the reason to weight before you compare.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>TF-IDF elsewhere: item profiles for recommendation<span class="mini">1 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The same weighting describes products and articles in a content-based recommender, where each item becomes a TF-IDF profile and users are matched to items by cosine. That use, and how a user profile is built from items, is taught in <a href="https://phoebefu6.github.io/learn-recommendation-with-phoebe/courses/b5-content-based.html">Recommendation, session b5: content-based filtering</a>. Here TF-IDF is a document weighting for classification, search and themes.</p>
+      </div>
+    </details>
+
+    <div class="callout example">
+      <p><span class="ex-pill">Real world</span> <strong>The "similar tickets" button that matched greetings.</strong> A help desk adds "show similar tickets" using raw word overlap. Every ticket that opens with "Hi team, I hope you are well" matches every other one. Switching the vectors to TF-IDF with cosine, and nothing else, makes the matches about the problem described rather than the politeness around it.</p>
+    </div>
+  </section>
+
+  <section class="section" id="part-3">
+    <div class="section-kicker">
+      <span class="klabel">Part 3 · covers n-grams, minimum document frequency and vocabulary size</span>
+      <h2>Pairs of words, and how big the vocabulary should be</h2>
+      <span class="tag concept">4 min live</span>
+    </div>
+    <p class="lede">The bag of words threw away order. Bigrams (adjacent pairs of words, written with an underscore here) buy a little of it back: "credit report" is one thing, "credit" and "report" are two. The price is a vocabulary that explodes, and the cure is a frequency floor. Here is the bill, in features.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 322" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Bars for the number of features in Ledgerly's table under six vocabulary choices. Unigrams 5,250. Unigrams, min df 2: 3,054. Unigrams, stop words and xxxx out, min df 2: 2,937. Unigrams plus bigrams, min df 2: 15,741. Unigrams plus bigrams, stop words and xxxx out, min df 1: 42,055. The same with min df 2: 9,033, highlighted, the widget's third weighting, 79% fewer than with min df 1.">
+        <defs>
+          <filter id="s2cSk" x="-3%" y="-3%" width="106%" height="106%"><feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="41" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.4" xChannelSelector="R" yChannelSelector="G"/></filter>
+          <pattern id="s2cHc" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(-38)"><line x1="0" y1="0" x2="0" y2="7" stroke="#592A22" stroke-width="1" opacity=".5"/></pattern>
+          <marker id="s2cAr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M1 1 L9 5 L1 9" fill="none" stroke="#2B1C18" stroke-width="1.6" stroke-linecap="round"/></marker>
+        </defs>
+        <style>
+          .s2cH { font: 800 12px Inter, sans-serif; fill: #2B1C18; }
+          .s2cL { font: 600 12px Inter, sans-serif; fill: #2B1C18; }
+          .s2cS { font: 400 11px Inter, sans-serif; fill: #5E4A44; }
+          .s2cB { font: 800 11px Inter, sans-serif; fill: #1E4566; }
+          .s2cV { font: 800 16px Inter, sans-serif; fill: #3B1A15; }
+          .s2cA { font: 700 11px Inter, sans-serif; fill: #592A22; }
+          .s2cN { font: 400 12px Inter, sans-serif; fill: #5E4A44; }
+        </style>
+
+        <text class="s2cH" x="30" y="26">HOW MANY COLUMNS EACH VOCABULARY CHOICE MAKES, 3,000 COMPLAINTS</text>
+        <text class="s2cA" x="330" y="46">features (columns in the table)</text>
+
+        <g filter="url(#s2cSk)" fill="none" stroke="#2B1C18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="330" y="56" width="57.4" height="24" rx="5" fill="#FFFFFF"/>
+          <rect x="330" y="94" width="33.4" height="24" rx="5" fill="#FFFFFF"/>
+          <rect x="330" y="132" width="32.1" height="24" rx="5" fill="#FFFFFF"/>
+          <rect x="330" y="170" width="172.2" height="24" rx="5" fill="#F8EEEB"/>
+          <rect x="330" y="208" width="460" height="24" rx="5" fill="url(#s2cHc)"/>
+          <rect x="330" y="246" width="98.8" height="24" rx="5" fill="#A9C8E3"/>
+        </g>
+
+        <text class="s2cL" x="318" y="73" text-anchor="end">Unigrams</text>
+        <text class="s2cL" x="318" y="111" text-anchor="end">Unigrams, min df 2</text>
+        <text class="s2cL" x="318" y="149" text-anchor="end">Unigrams, stop + xxxx out, min df 2</text>
+        <text class="s2cL" x="318" y="187" text-anchor="end">Uni + bigrams, min df 2</text>
+        <text class="s2cL" x="318" y="225" text-anchor="end">Uni + bigrams, stop + xxxx out, min df 1</text>
+        <text class="s2cL" x="318" y="263" text-anchor="end">Same, min df 2 (widget, third weighting)</text>
+
+        <text class="s2cV" x="396" y="74">5,250</text>
+        <text class="s2cV" x="372" y="112">3,054</text>
+        <text class="s2cV" x="371" y="150">2,937</text>
+        <text class="s2cV" x="512" y="188">15,741</text>
+        <text class="s2cV" x="800" y="226">42,055</text>
+        <text class="s2cV" x="438" y="264">9,033</text>
+        <text class="s2cB" x="510" y="263">79% fewer than min df 1: most pairs occur once</text>
+
+        <text class="s2cN" x="30" y="294">Bigrams multiply the columns; a floor of two complaints removes most of them. Counted in the page from the sample.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - adding bigrams takes 5,250 columns to 42,055; requiring each feature to appear in two complaints brings it back to 9,033</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Bigrams: credit_report is not credit plus report<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>An n-gram is a run of n adjacent tokens. Unigrams are single words; bigrams are pairs. With stop words and <code>xxxx</code> removed and bigrams added, the top TF-IDF terms of the six queues gain pairs like <code>credit_report</code> (credit reporting and debt collection), <code>credit_card</code> (credit card) and <code>checking_account</code> (checking or savings). These pairs mean more than their parts: "credit" alone appears in complaints about cards, collections and reports.</p>
+        <p>Remove stop words <em>before</em> forming pairs and the pairs skip over them: "my credit report" becomes <code>credit_report</code>. That is usually what you want for routing and occasionally what you do not ("not authorised" loses its "not" if "not" is on the stop list).</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Minimum document frequency: the cheapest cut you will make<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p><code>min_df=2</code> keeps only features that appear in at least two complaints. On single words it cuts 5,250 columns to 3,054. On the unigram plus bigram table with stop words and <code>xxxx</code> out, it cuts 42,055 to 9,033: 79% of the columns gone. Pairs follow Zipf even harder than words do, so most pairs occur exactly once.</p>
+        <p>A feature that appears in one complaint cannot help a model generalise: it can only memorise that one complaint. The cost is real but small: every rare product name and every one-off phrase goes too. Write the floor on the playbook page, because a new product name will sit below it until enough complaints mention it.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Did bigrams help? It depends on the model<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Session 4's tuning grid, scored on a validation split taken from the training rows, gives a mixed answer. For naive Bayes on counts, bigrams did not help: alpha 1 scored 0.768 with unigrams and 0.748 with unigrams plus bigrams; alpha 0.3 scored 0.760 and 0.735. The logistic model with TF-IDF and bigrams (min df 2) reached 0.778 on the 600-row holdout, the best untuned rung.</p>
+        <p>Read those numbers with the sample in mind: it is rebalanced (credit reporting is 30% of the sample, 76.7% of the real 2023 rows), so the accuracies describe this six-queue mix, not Ledgerly's live traffic. Session 4 runs the full comparison; tonight's lesson is only that "more features" is a hypothesis to test, not a default.</p>
+      </div>
+    </details>
+
+    <div class="callout example">
+      <p><span class="ex-pill">Real world</span> <strong>The model that memorised reference numbers.</strong> A team classifies support emails with every bigram kept. Accuracy on the training emails is superb and drops on next month's mail: the model had learned pairs like "ref 4471" that each appeared in one thread. A minimum document frequency of two, plus a rule that strips numbers, removed the memorised pairs and most of the gap.</p>
+    </div>
+  </section>
+
+  <section class="section" id="demo-1">
+    <div class="section-kicker">
+      <span class="klabel">Build-along</span>
+      <h2>Ledgerly's weighting choice</h2>
+      <span class="tag demo">★ 22 min · everyone builds</span>
+    </div>
+    <p class="lede">You will read the top words of all six queues under three weightings, computed in your browser on the same 3,000 complaints, rebuild the third one in Python, and write the weighting decision onto page 2 of Ledgerly's text playbook (Constructed Ledgerly example; the complaints are real). First, one row by hand, so the widget's numbers are never magic.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 290" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Worked example of one four-word row. Step 1, counts: xxxx 3, the 2, credit 2, report 1. Step 2, times smooth idf: 3 times 1.422 is 4.266; 2 times 1.252 is 2.504; 2 times 1.901 is 3.802; 1 times 2.533 is 2.533. Step 3, divide by the row length 6.734: xxxx 0.634, the 0.372, credit 0.565, report 0.376. Without idf, counts divided by their own length 4.243 give xxxx 0.707, the 0.471, credit 0.471, report 0.236. With idf, credit pulls ahead of the.">
+        <defs>
+          <filter id="s2dSk" x="-3%" y="-3%" width="106%" height="106%"><feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="43" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.4" xChannelSelector="R" yChannelSelector="G"/></filter>
+          <pattern id="s2dHc" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(-38)"><line x1="0" y1="0" x2="0" y2="7" stroke="#592A22" stroke-width="1" opacity=".5"/></pattern>
+          <marker id="s2dAr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M1 1 L9 5 L1 9" fill="none" stroke="#2B1C18" stroke-width="1.6" stroke-linecap="round"/></marker>
+        </defs>
+        <style>
+          .s2dH { font: 800 12px Inter, sans-serif; fill: #2B1C18; }
+          .s2dL { font: 600 12px Inter, sans-serif; fill: #2B1C18; }
+          .s2dS { font: 400 11px Inter, sans-serif; fill: #5E4A44; }
+          .s2dA { font: 700 11px Inter, sans-serif; fill: #592A22; }
+          .s2dN { font: 400 12px Inter, sans-serif; fill: #5E4A44; }
+        </style>
+
+        <text class="s2dH" x="30" y="26">ONE ROW, FROM COUNTS TO TF-IDF (WORKED EXAMPLE, CONSTRUCTED LEDGERLY EXAMPLE)</text>
+
+        <g filter="url(#s2dSk)" fill="none" stroke="#2B1C18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="24" y="46" width="190" height="140" rx="10" transform="rotate(-0.6 119 116)" fill="#FFFFFF"/>
+          <rect x="246" y="46" width="220" height="140" rx="10" transform="rotate(0.5 356 116)" fill="#F8EEEB"/>
+          <rect x="498" y="46" width="358" height="140" rx="10" transform="rotate(-0.4 677 116)" fill="#A9C8E3"/>
+          <path d="M216 116 L240 116" marker-end="url(#s2dAr)"/>
+          <path d="M468 116 L492 116" marker-end="url(#s2dAr)"/>
+          <rect x="24" y="204" width="832" height="36" rx="10" transform="rotate(0.2 440 222)" fill="#F8EEEB"/>
+        </g>
+
+        <text class="s2dH" x="40" y="72">1 · Counts</text>
+        <text class="s2dL" x="40" y="104">xxxx</text><text class="s2dL" x="170" y="104" text-anchor="end">3</text>
+        <text class="s2dL" x="40" y="126">the</text><text class="s2dL" x="170" y="126" text-anchor="end">2</text>
+        <text class="s2dL" x="40" y="148">credit</text><text class="s2dL" x="170" y="148" text-anchor="end">2</text>
+        <text class="s2dL" x="40" y="170">report</text><text class="s2dL" x="170" y="170" text-anchor="end">1</text>
+
+        <text class="s2dH" x="262" y="72">2 · Times smooth idf</text>
+        <text class="s2dL" x="262" y="104">3 times 1.422 = 4.266</text>
+        <text class="s2dL" x="262" y="126">2 times 1.252 = 2.504</text>
+        <text class="s2dL" x="262" y="148">2 times 1.901 = 3.802</text>
+        <text class="s2dL" x="262" y="170">1 times 2.533 = 2.533</text>
+
+        <text class="s2dH" x="514" y="72">3 · Divide by the row length = TF-IDF</text>
+        <text class="s2dL" x="514" y="92">length = sqrt of the sum of squares = 6.734</text>
+        <text class="s2dL" x="514" y="116">xxxx 4.266 ÷ 6.734 = 0.634</text>
+        <text class="s2dL" x="514" y="136">the 2.504 ÷ 6.734 = 0.372</text>
+        <text class="s2dL" x="514" y="156">credit 3.802 ÷ 6.734 = 0.565</text>
+        <text class="s2dL" x="514" y="176">report 2.533 ÷ 6.734 = 0.376</text>
+
+        <text class="s2dL" x="40" y="227">Counts only, same length rule (÷ 4.243): xxxx 0.707 · the 0.471 · credit 0.471 · report 0.236</text>
+
+        <text class="s2dA" x="30" y="262">idf values are the real ones from the 3,000 complaints; the counts are assumed</text>
+        <text class="s2dN" x="30" y="280">Worked example, 3 decimals. Without idf, credit ties the; with idf, credit pulls clearly ahead.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - TF-IDF is two operations: multiply each count by its idf, then divide the row by its length</figcaption>
+    </figure>
+
+    <div class="steps">
+      <div class="step">
+        <p><strong>Read raw counts for all six queues.</strong> The widget starts on "Raw counts". Click through the six queue chips and read the top 8 of each aloud. The first seven are the same words in every queue (<code>xxxx</code>, i, the, to, my, a, and, in varying order); the widget reports 5,250 features. Ask the room: from these lists alone, could you route a complaint?</p>
+        <div class="prompt-box good"><span class="label">★ Step 1 · what to note for each queue</span>Weighting: Raw counts. Features: 5,250.
+Top 7 words: the same seven in every queue?  yes / no
+First word that names a product: ______  (rank ___)</div>
+        <div class="ntx-mount" data-ntx="terms"></div>
+      </div>
+
+      <div class="step">
+        <p><strong>Switch to TF-IDF.</strong> Click "TF-IDF" and walk the six queues again. The values change (they are now mean TF-IDF weights per complaint) but the top is still led by <code>xxxx</code>, i, the. Part 2 explains why: idf demotes common words, and those words are repeated in almost every complaint. Note which product words climbed.</p>
+        <div class="prompt-box good"><span class="label">★ Step 2 · counts vs TF-IDF, one line per queue</span>Queue: ____________
+Still on top under TF-IDF: ______________________
+Product words that climbed: ______________________</div>
+      </div>
+
+      <div class="step">
+        <p><strong>Switch to the third weighting.</strong> Click "TF-IDF, stop words and xxxx out, plus bigrams". The widget reports 9,033 features (min df 2). Now the queues separate. Check your screen against these top 8 lists, computed on the same sample:</p>
+        <div class="prompt-box good"><span class="label">★ Step 3 · top 8 per queue, third weighting</span>Credit reporting:     credit, report, reporting, credit_report, information, accounts, section, consumer
+Debt collection:      debt, credit, collection, account, report, company, credit_report, received
+Credit card:          card, credit_card, credit, late, account, payment, never, bank
+Checking or savings:  account, bank, checking, check, money, checking_account, deposit, funds
+Student loan:         loans, loan, student, mohela, payments, payment, plan, nelnet
+Vehicle loan or lease: car, vehicle, loan, payment, auto, purchased, finance, payments</div>
+        <p>Three things to notice. Debt collection's list contains "credit", "report" and <code>credit_report</code>: collectors report debts to the bureaus, and session 3 shows that overlap becoming misrouted complaints. "Section" in credit reporting is legal citation language. "Mohela" and "nelnet" are company names (federal student loan servicers): strong signals today, fragile if the company mix changes.</p>
+      </div>
+
+      <div class="step">
+        <p><strong>Rebuild the third weighting in Python.</strong> Use the narratives and product labels you loaded in session 1 (2023 rows, the six queues, the first 50 words of each). Write your own stop list first; do not use the built-in "english" list unread. scikit-learn writes bigrams with a space ("credit report") where the widget uses an underscore.</p>
+        <div class="prompt-box good"><span class="label">★ Step 4 · Python, run locally (scikit-learn + numpy)</span>import numpy as np
+from sklearn.feature_extraction.text import TfidfVectorizer
+
+my_stop = ["xxxx", "i", "the", "to", "my", "a", "and", "of", "on", "that",
+           "was", "is", "it", "for", "in", "me", "this", "they", "have", "with"]
+           # your own list: read every word before you add it
+
+vec = TfidfVectorizer(token_pattern=r"[a-z]+", stop_words=my_stop,
+                      ngram_range=(1, 2), min_df=2)
+# defaults kept: norm="l2", use_idf=True, smooth_idf=True, sublinear_tf=False
+X = vec.fit_transform(texts)              # texts: lowercased narratives, first 50 words
+print(X.shape)                            # your numbers will be close, not identical
+
+names = np.array(vec.get_feature_names_out())
+labels = np.array(labels)                 # one queue name per narrative
+for q in sorted(set(labels)):
+    mean_w = np.asarray(X[labels == q].mean(axis=0)).ravel()
+    print(q, list(names[mean_w.argsort()[::-1][:8]]))
+# your numbers will be close, not identical</div>
+        <p>Your lists will be close to step 3, not identical: your stop list differs from the bench's 126-word list, and your sample draw may differ from the bench's seed.</p>
+      </div>
+
+      <div class="step">
+        <p><strong>Write page 2 of the playbook.</strong> Paste the block below under page 1 (the corpus card) and fill the blanks. Every switch carries its reason, so session 4's bench can test each one instead of arguing about it.</p>
+        <div class="prompt-box good"><span class="label">★ Step 5 · Ledgerly text playbook, page 2: vocabulary and weighting choice (Constructed Ledgerly example)</span>Tokens: letters only, lowercased, first 50 per complaint (see page 1).
+Redaction marks (xxxx): removed from features. Reason: most frequent token, idf 1.422,
+  never a routing signal.
+Stop words: own list of ___ words, written for complaints. Reason: the top 7 of every queue
+  were stop words or xxxx. Kept on purpose: not, no, never (they carry meaning).
+N-grams: unigrams + bigrams. Reason: credit_report, credit_card, checking_account mean
+  more than their parts. To test: bigrams did not help naive Bayes on validation.
+Minimum document frequency: 2. Reason: 42,055 to 9,033 features (79% cut); a feature seen
+  in one complaint can only memorise it. Cost: new product names wait below the floor.
+Weighting: TF-IDF, smooth idf ln((1+n)/(1+df)) + 1, l2 norm, sublinear_tf off (to test).
+Not decided here: which model. TF-IDF + naive Bayes scored 0.608 vs counts 0.762 (session 4).
+Owner: ____________   Date: ____________</div>
+      </div>
+    </div>
+
+    <div class="callout tip">
+      <p><strong>A weighting is a claim about what matters.</strong> When someone asks next year why "zelle" never shows up on the complaints dashboard, page 2 answers in one line: it was not in the first 50 words of any complaint in the sample, so it has no column. Nothing downstream can weight a word the vocabulary never kept.</p>
+    </div>
+  </section>
+
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Before session 3</h2>
+      <span class="tag exercise">30 min</span>
+    </div>
+    <ol>
+      <li><strong>Write your own 20-word stop list for your domain</strong> (tickets, survey answers, reviews) and justify each word in one line. Then list three common words you deliberately kept, and why.</li>
+      <li><strong>Compare sublinear_tf.</strong> Run the step 4 code twice, with <code>sublinear_tf=False</code> and <code>sublinear_tf=True</code>, and compare the top 8 words for two queues. Which words moved, and are they words that tend to be repeated inside one complaint?</li>
+      <li><strong>Compute one row by hand</strong> for a short text of your own: counts, times idf, divide by length. Check it against <code>TfidfVectorizer</code> on the same tiny corpus.</li>
+      <li><strong>Move the floor.</strong> Try <code>min_df</code> at 1, 2, 5 and 10 on your own text and record the feature count each time. Where does the count stop falling fast, and which words that you care about fall below each floor?</li>
+    </ol>
+  </section>
+
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions</h2>
+    </div>
+    <p>Clear all three and session 2 gets stamped in your passport.</p>
+
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">1 · "the" appears in 2,331 of the 3,000 complaints and its smooth idf is 1.252. Why is it close to 1 and not 0?</p>
+      <button class="qopt" type="button">A · Because "the" is a stop word, and stop words always get idf 1</button>
+      <button class="qopt" type="button">B · The smooth idf is ln((1+n)/(1+df)) + 1: the fraction is near 1, its log near 0, and the final +1 keeps the weight from vanishing</button>
+      <button class="qopt" type="button">C · Because l2 normalisation rounds it up</button>
+      <button class="qopt" type="button">D · Because "the" appears exactly once per complaint</button>
+      <p class="qwhy">ln(3,001 / 2,332) is about 0.252, and scikit-learn adds 1. The textbook idf, log10(N/df), would give "the" 0.110 and a word in every complaint exactly 0. Two conventions, two numbers: write yours down.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="3">
+      <p class="qtext">2 · With stop words and xxxx removed, unigrams plus bigrams make 42,055 features at min df 1 and 9,033 at min df 2. Why does one complaint of extra support cut 79%?</p>
+      <button class="qopt" type="button">A · min df 2 removes all bigrams</button>
+      <button class="qopt" type="button">B · min df 2 removes every word that is a stop word</button>
+      <button class="qopt" type="button">C · The 50-token cut deletes the bigrams</button>
+      <button class="qopt" type="button">D · Pairs follow Zipf even harder than words: most bigrams occur in exactly one complaint, and the floor drops every one of them</button>
+      <p class="qwhy">The tail of the bigram distribution is enormous: most pairs are one-offs. A feature seen in one complaint can only memorise that complaint, so the floor costs little signal and most of the columns. Useful pairs like credit_report survive easily.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">3 · TF-IDF clearly separates the six queues' top words. Yet on the bench, TF-IDF + naive Bayes scores 0.608 while counts + naive Bayes scores 0.762. What explains it?</p>
+      <button class="qopt" type="button">A · TF-IDF has a bug in the widget</button>
+      <button class="qopt" type="button">B · The holdout is too small to tell anything</button>
+      <button class="qopt" type="button">C · A weighting is good or bad for a particular model: l2-normalised TF-IDF shrinks every value below 1, so naive Bayes leans on its class prior and recall collapses outside credit reporting</button>
+      <button class="qopt" type="button">D · TF-IDF should always be used with stop words kept</button>
+      <p class="qwhy">Session 4 shows 175 of 180 credit reporting complaints right under R3 while vehicle loan recall falls to 0.283. Credit reporting is 30% of this rebalanced sample (76.7% of the real 2023 rows), so leaning on the prior hides the damage. Logistic regression with the same TF-IDF features reaches 0.778.</p>
+    </div>
+
+    <p class="quiz-score"></p>
+  </section>
+
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Sources covered</span>
+      <h2>What this session teaches, and where it came from</h2>
+    </div>
+    <div class="covered">
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">TF-IDF, textbook convention</span><span class="note">Jurafsky and Martin (2026 draft), Speech and Language Processing, 3rd ed., ch 11 (tf = 1 + log10 count, idf = log10 N/df); ch 5 for cosine; read at source</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Tf-idf weighting</span><span class="note">Manning, Raghavan and Schutze (2008), Introduction to Information Retrieval, Cambridge UP, section 6.2.2; read at source</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">scikit-learn TfidfTransformer defaults</span><span class="note">scikit-learn documentation, "Text feature extraction" (read 2026-11-19): norm l2, use_idf, smooth_idf, sublinear_tf off; smooth idf formula</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">TF-IDF item profiles</span><span class="note">Linked, not retaught: Recommendation, session b5, content-based filtering</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Every number on this page</span><span class="note">Computed by the bench on the shipped sample; a plain-Python reference run gives the same values. The textbook-idf and one-row figures are worked examples from those values</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Ledgerly</span><span class="note">Constructed example; the complaints are real, the team is fictional</span></div>
+    </div>
+    <p class="mono" style="margin-top:14px">Every fact on this page, and its verification tier, is recorded in the course's source map.</p>
+  </section>
+
+  <section class="cheat" id="cheatsheet">
+    <h3>Session 2 cheat sheet <span>· pin this</span></h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>Counts reward frequency</b><span>Raw counts give every queue the same top 7: xxxx, i, the, to, my, a, and.</span></div>
+      <div class="cheat-item"><b>TF-IDF in two moves</b><span>Multiply each count by idf, then divide the row by its length (l2).</span></div>
+      <div class="cheat-item"><b>Smooth idf</b><span>ln((1+n)/(1+df)) + 1. "the" 1.252, "credit" 1.901, "scam" 6.522. Never below 1.</span></div>
+      <div class="cheat-item"><b>Demote is not delete</b><span>TF-IDF on raw tokens still leads with xxxx, i, the. Removing them is a separate choice.</span></div>
+      <div class="cheat-item"><b>Pairs need a floor</b><span>Uni + bigrams: 42,055 features; min df 2: 9,033. Most pairs occur once.</span></div>
+      <div class="cheat-item"><b>Better weighting, which model?</b><span>TF-IDF + naive Bayes 0.608 vs counts 0.762. Test the pair, not the weighting alone.</span></div>
+    </div>
+  </section>
+
+  <div class="callout next">
+    <span class="nx-pill">Next session</span>
+    <p>The cells are weighted; now a model reads them. Session 3 routes complaints with naive Bayes and logistic regression, reads the weights each model learned, and turns the errors into Ledgerly's routing cost table.</p>
+  </div>
+
+  <footer class="pagefoot">
+    <span>Session 2 of 6 · learn-nlp-text-analytics-with-phoebe · by Phoebe Fu &nbsp;·&nbsp; 📚 <a href="https://phoebefu6.github.io/learn-with-phoebe/">Learn with Phoebe ↗</a></span>
+    <span><a href="01-text-is-a-table.html">← Prev: Text is a table you have not built yet</a> &nbsp;·&nbsp; <a href="03-route-it.html">Next: Route it: a classifier you can read →</a></span>
+  </footer>
+
+</main>
+
+<script src="../assets/ntx-sample.js?v=2"></script>
+<script src="../assets/ntx-live.js?v=2"></script>
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

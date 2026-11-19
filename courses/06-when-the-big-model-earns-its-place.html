@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- social:start -->
+<meta name="description" content="Session 6 of 6. Cost per thousand, latency, audit and the published evidence that disagrees: decide when a large language model earns its place over a classical text classifier, and sign Ledgerly's build-or-buy note.">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Learn with Phoebe">
+<meta property="og:title" content="When the big model earns its place - learn NLP and text analytics with phoebe">
+<meta property="og:description" content="Session 6 of 6. Cost, contested evidence, audit and a signed build-or-buy note for LLM versus classical text classification.">
+<meta property="og:url" content="https://phoebefu6.github.io/learn-nlp-text-analytics-with-phoebe/courses/06-when-the-big-model-earns-its-place.html">
+<meta property="og:image" content="https://phoebefu6.github.io/learn-nlp-text-analytics-with-phoebe/assets/og-cover.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="When the big model earns its place - learn NLP and text analytics with phoebe">
+<meta name="twitter:description" content="Session 6 of 6. Cost, contested evidence, audit and a signed build-or-buy note.">
+<meta name="twitter:image" content="https://phoebefu6.github.io/learn-nlp-text-analytics-with-phoebe/assets/og-cover.png">
+<!-- social:end -->
+<title>Session 6 · When the big model earns its place - learn NLP and text analytics with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=2">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-nlp-text-analytics-with-phoebe</a> / Session 6 of 6</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn NLP &amp; Text Analytics with Phoebe · Session 6 of 6</div>
+    <h1>When the big model <span class="accent">earns its place</span></h1>
+    <p class="sub">Five sessions ago somebody said "just put them through an LLM". You now have a classifier that routes 474 of 600 real complaints correctly, gives the same answer twice and costs almost nothing to run. Tonight we take the large language model seriously: what it really costs, what the published evidence says (it disagrees with itself), what you can defend to an auditor, and when it is the right tool after all. You leave with a signed build-or-buy note.</p>
+    <div class="chip-row">
+      <span class="chip level">🔴 Capstone</span>
+      <span class="chip audience">Analysts and data scientists handed a pile of free text</span>
+      <span class="chip audience">Light Python, everything also runs in the page</span>
+      <span class="chip time">45 min</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Welcome</span>
+      <span class="a2" style="flex:4">3-18 · Cost, evidence, audit</span>
+      <span class="a3" style="flex:5">18-40 · Capstone: the build-or-buy note</span>
+      <span class="a4" style="flex:1">40-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>Where we start</h2>
+    </div>
+    <p class="lede">The Constructed Ledgerly example has five pages of its text playbook: a corpus card, a weighting choice, a routing classifier with its error table, a bench result with the trap rows, and a search and theme watchlist. The head of operations now asks the question every text team gets eventually: "a vendor says their model does all of this out of the box; why are we maintaining our own?" The honest answer is neither "never" nor "obviously". It is a note that states what was measured, what was only modelled, what each option costs beyond the invoice, and who signs for the choice.</p>
+
+    <div class="legend">
+      <span class="pill">🎫 Clear all three quiz questions to stamp your passport</span>
+      <span class="pill">Live = presented in the 45 minutes</span>
+      <span class="pill">Self-study = the full depth, after class</span>
+      <span class="pill">★ Build-along = do it yourself, in the page</span>
+    </div>
+
+    <div class="callout win">
+      <p><strong>★ What you walk out with tonight.</strong> Page 6 of Ledgerly's text playbook: a signed build-or-buy note with the bench numbers already filled in, today's prices from a vendor you would actually use, a list of what the bench did and did not measure, a design for a 200-complaint labelled check that measures an LLM on your own data before anyone buys, a decision rule written before the result is known, an owner and a date.</p>
+    </div>
+  </section>
+
+  <section class="section" id="part-1">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers cost per thousand documents, volume and latency</span>
+      <h2>The bill is the smallest cost</h2>
+      <span class="tag concept">5 min live</span>
+    </div>
+    <p class="lede">Teams argue about the price per million tokens because it is the one cost with a number on it. Work it out properly and it is usually small. The costs that decide the question are the ones without a price tag: who maintains the thing, whether tomorrow's labels match today's, how fast an answer comes back, and where the text goes.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 416" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Two stacks of cost boxes. Classical rung, R5 on the bench: labelled examples, 2,400 training complaints here; a person who maintains it; retraining when labels or vocabulary drift; compute, milliseconds in the browser. API rung, modelled and not measured: the bill, tokens times price, 0.39 dollars per 1,000 complaints, highlighted; prompt maintenance; version pinning and logging; data leaves the building; latency and rate limits. Notes: 600 full-length complaints are 221,590 input and 2,400 output tokens at placeholder prices of 1 and 5 dollars per million; at a constructed Ledgerly volume of 30,000 a month that is about 11.68 dollars; re-verify the vendor's prices.">
+        <defs>
+          <filter id="s6aSk" x="-3%" y="-3%" width="106%" height="106%"><feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="61" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.4" xChannelSelector="R" yChannelSelector="G"/></filter>
+          <pattern id="s6aHc" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(-38)"><line x1="0" y1="0" x2="0" y2="7" stroke="#592A22" stroke-width="1" opacity=".5"/></pattern>
+          <marker id="s6aAr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M1 1 L9 5 L1 9" fill="none" stroke="#2B1C18" stroke-width="1.6" stroke-linecap="round"/></marker>
+        </defs>
+        <style>
+          .s6aH { font: 800 12px Inter, sans-serif; fill: #2B1C18; }
+          .s6aL { font: 600 12px Inter, sans-serif; fill: #2B1C18; }
+          .s6aS { font: 400 11px Inter, sans-serif; fill: #5E4A44; }
+          .s6aB { font: 800 11px Inter, sans-serif; fill: #1E4566; }
+          .s6aA { font: 700 11px Inter, sans-serif; fill: #592A22; }
+          .s6aN { font: 400 12px Inter, sans-serif; fill: #5E4A44; }
+        </style>
+
+        <text class="s6aH" x="30" y="26">WHAT EACH WAY OF LABELLING ACTUALLY COSTS</text>
+        <text class="s6aS" x="400" y="26">qualitative: box height is not a dollar amount</text>
+        <text class="s6aA" x="44" y="52">CLASSICAL RUNG (R5 ON THE BENCH)</text>
+        <text class="s6aA" x="474" y="52">API RUNG (MODELLED, NOT MEASURED)</text>
+
+        <g filter="url(#s6aSk)" fill="none" stroke="#2B1C18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="44" y="64" width="362" height="54" rx="8" transform="rotate(-0.5 225 91)" fill="#FFFFFF"/>
+          <rect x="44" y="128" width="362" height="54" rx="8" transform="rotate(0.4 225 155)" fill="#FFFFFF"/>
+          <rect x="44" y="192" width="362" height="54" rx="8" transform="rotate(-0.4 225 219)" fill="#F8EEEB"/>
+          <rect x="44" y="256" width="362" height="40" rx="8" transform="rotate(0.5 225 276)" fill="#FFFFFF"/>
+          <rect x="474" y="64" width="362" height="44" rx="8" transform="rotate(0.5 655 86)" fill="#A9C8E3"/>
+          <rect x="474" y="118" width="362" height="54" rx="8" transform="rotate(-0.4 655 145)" fill="#FFFFFF"/>
+          <rect x="474" y="182" width="362" height="54" rx="8" transform="rotate(0.4 655 209)" fill="#FFFFFF"/>
+          <rect x="474" y="246" width="362" height="54" rx="8" transform="rotate(-0.5 655 273)" fill="#F8EEEB"/>
+          <rect x="474" y="310" width="362" height="54" rx="8" transform="rotate(0.4 655 337)" fill="#FFFFFF"/>
+          <path d="M796 72 L820 72 L820 100 L816 96 L812 100 L808 96 L804 100 L800 96 L796 100 Z" fill="#FFFFFF" stroke-width="1.6"/>
+          <path d="M801 80 L815 80 M801 87 L812 87" stroke-width="1.4"/>
+        </g>
+
+        <text class="s6aH" x="60" y="86">Labelled examples</text>
+        <text class="s6aS" x="60" y="104">2,400 labelled training complaints here</text>
+        <text class="s6aH" x="60" y="150">A person who maintains it</text>
+        <text class="s6aS" x="60" y="168">reads the error table, owns the six queues</text>
+        <text class="s6aH" x="60" y="214">Retraining</text>
+        <text class="s6aS" x="60" y="232">when labels or vocabulary drift (Part 3)</text>
+        <text class="s6aH" x="60" y="281">Compute</text>
+        <text class="s6aS" x="150" y="281">milliseconds, in your browser</text>
+
+        <text class="s6aH" x="490" y="91">The bill: tokens x price</text>
+        <text class="s6aB" x="672" y="91">$0.39 per 1,000*</text>
+        <text class="s6aH" x="490" y="140">Prompt maintenance</text>
+        <text class="s6aS" x="490" y="158">the instruction is code: test every change</text>
+        <text class="s6aH" x="490" y="204">Version pinning and logging</text>
+        <text class="s6aS" x="490" y="222">same model, prompt, settings; log every label</text>
+        <text class="s6aH" x="490" y="268">Data leaves the building</text>
+        <text class="s6aS" x="490" y="286">complaint text goes to a vendor: check the contract</text>
+        <text class="s6aH" x="490" y="332">Latency and rate limits</text>
+        <text class="s6aS" x="490" y="350">a network call per complaint; quotas cap the pace</text>
+
+        <text class="s6aN" x="44" y="326">Classical costs are people and labels:</text>
+        <text class="s6aN" x="44" y="344">paid up front, then kept up.</text>
+
+        <text class="s6aN" x="30" y="386">*600 full-length complaints: 221,590 input and 2,400 output tokens at placeholder $1 / $5 per million.</text>
+        <text class="s6aN" x="30" y="404">Constructed Ledgerly volume, 30,000 a month: about $11.68. Placeholder prices: re-verify the vendor's list.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the invoice is the one small, visible box; the costs that decide the question sit in the boxes with no price on them</figcaption>
+    </figure>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>The bill, worked out from the bench<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The bench's modelled rung prices one realistic set-up: every held-out complaint sent at its <strong>full length</strong> (not the 50-word cut the classical rungs see), with a 120-token instruction naming the six queues, and a 4-token answer. It assumes 1.3 tokens per English word. The 600 complaints are 115,069 words, so 221,590 input tokens and 2,400 output tokens.</p>
+        <p>At placeholder prices of $1 per million input tokens and $5 per million output tokens, that is <strong>$0.39 per 1,000 complaints</strong>. Scale it to a constructed Ledgerly volume of 30,000 complaints a month: 0.3893 x 30 = <strong>about $11.68 a month</strong>. Every one of those prices is a placeholder, not a quote: re-verify the vendor's current list before the number goes into any note, because prices change.</p>
+        <p>The point is not that $11.68 is cheap or dear. It is that the bill is rarely what decides this.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Speed: milliseconds against a network call<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Every classical rung on the bench trains on 2,400 complaints and predicts 600 more inside your browser tab. The bench prints the time on every run, next to "Train + predict"; read your own figure tonight, because it depends on your laptop. It is measured in milliseconds, and nothing leaves the page.</p>
+        <p>An API rung is a network round trip per complaint (or per batch), with a queue in front of it. That brings two operational costs that never appear on the invoice. <strong>Latency</strong>: if routing happens while the customer waits, the answer has to come back in time, every time. <strong>Rate limits</strong>: vendors cap requests and tokens per minute, so a month-end spike or a backfill of last year's complaints becomes a scheduling problem. Neither is a reason to refuse an LLM; both belong in the note with a plan.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>What the price leaves out<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p><strong>Prompt maintenance.</strong> The instruction that names the six queues is code. When a queue is renamed or split, someone rewrites it, and every rewrite changes labels on complaints nobody looked at. Test a new prompt the way you would test a new model: on held-out labelled rows, before it goes live.</p>
+        <p><strong>Version pinning.</strong> A hosted model behind a moving alias can change under you. Pin an exact model version where the vendor allows it, record it with every label, and plan for the day that version is retired.</p>
+        <p><strong>Data leaving the building.</strong> Ledgerly's own complaints carry names and account details before any scrubbing (the CFPB redacts them as XXXX before publishing; your inbox does not). Sending them to a vendor is a contract, privacy and retention question that has to be answered before the first call, not after.</p>
+        <p><strong>And the classical side is not free.</strong> R5 needed 2,400 labelled complaints, someone who reads its error table, and retraining when the labels or the vocabulary move. Write both columns honestly or the note is advocacy.</p>
+      </div>
+    </details>
+
+    <div class="callout example">
+      <p><span class="ex-pill">Real world</span> <strong>The cheap pilot that stalled.</strong> A support team prices LLM tagging for its tickets, finds the monthly bill smaller than one software licence, and gets a yes in a week. The pilot then sits for three months: legal needs to review where ticket text is stored, the security team asks which model version produced last month's labels, and a backlog import hits the vendor's rate limit on day one. None of those costs were in the spreadsheet; all of them were predictable.</p>
+    </div>
+  </section>
+
+  <section class="section" id="part-2">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers the contested comparison of zero-shot LLMs and trained classifiers</span>
+      <h2>The evidence disagrees, and why both sides can be right</h2>
+      <span class="tag concept">5 min live</span>
+    </div>
+    <p class="lede">Ask "are LLMs better at labelling text?" and you will find a peer-reviewed yes and several careful no's. Do not pick the paper that agrees with your manager. Read what each study compared against, because that is where the disagreement comes from, and then measure on your own data.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 530" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A two-axis map of four studies. Horizontal axis: what zero-shot labelling was compared against, crowd workers on the left, fine-tuned or best models on the right. Vertical axis: headline finding, zero-shot ahead at the top, behind at the bottom. Top left: Gilardi, Alizadeh and Kubli 2023, about 25 points above crowd workers, 6,183 tweets and news articles, under 0.003 dollars a label, thirty times cheaper. Bottom right: Bucher and Martini 2024, fine-tuned smaller models win in all cases; Kocon et al. 2023, about 25 percent average quality loss against the best models; Ziems et al. 2024, no win over the best fine-tuned models on classification. Top right and bottom left: none of these four studies. Bottom band: different baselines, tasks and model generations, both readings can be true at once.">
+        <defs>
+          <filter id="s6bSk" x="-3%" y="-3%" width="106%" height="106%"><feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="67" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.4" xChannelSelector="R" yChannelSelector="G"/></filter>
+          <pattern id="s6bHc" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(-38)"><line x1="0" y1="0" x2="0" y2="7" stroke="#592A22" stroke-width="1" opacity=".5"/></pattern>
+          <marker id="s6bAr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M1 1 L9 5 L1 9" fill="none" stroke="#2B1C18" stroke-width="1.6" stroke-linecap="round"/></marker>
+        </defs>
+        <style>
+          .s6bH { font: 800 12px Inter, sans-serif; fill: #2B1C18; }
+          .s6bL { font: 600 12px Inter, sans-serif; fill: #2B1C18; }
+          .s6bS { font: 400 11px Inter, sans-serif; fill: #5E4A44; }
+          .s6bB { font: 800 11px Inter, sans-serif; fill: #1E4566; }
+          .s6bA { font: 700 11px Inter, sans-serif; fill: #592A22; }
+          .s6bN { font: 400 12px Inter, sans-serif; fill: #5E4A44; }
+        </style>
+
+        <text class="s6bH" x="30" y="26">FOUR STUDIES, TWO QUESTIONS: COMPARED WITH WHAT, AND WHAT DID THEY FIND?</text>
+
+        <g filter="url(#s6bSk)" fill="none" stroke="#2B1C18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M120 56 L120 420 L830 420" stroke-width="1.5"/>
+          <path d="M475 56 L475 420" stroke="#8A4A3C" stroke-width="1.4" stroke-dasharray="6 5"/>
+          <path d="M120 190 L830 190" stroke="#8A4A3C" stroke-width="1.4" stroke-dasharray="6 5"/>
+          <rect x="140" y="72" width="314" height="100" rx="8" transform="rotate(-1.2 297 122)" fill="#FFFFFF"/>
+          <rect x="492" y="204" width="320" height="64" rx="8" transform="rotate(0.8 652 236)" fill="#FFFFFF"/>
+          <rect x="492" y="276" width="320" height="64" rx="8" transform="rotate(-0.9 652 308)" fill="#FFFFFF"/>
+          <rect x="492" y="348" width="320" height="64" rx="8" transform="rotate(0.7 652 380)" fill="#FFFFFF"/>
+          <rect x="30" y="478" width="820" height="40" rx="8" transform="rotate(-0.3 440 498)" fill="#A9C8E3"/>
+          <path d="M846 14 L846 50 M822 24 L870 30" stroke-width="1.6"/>
+          <path d="M814 34 Q822 44 830 34 M862 40 Q870 50 878 40" stroke-width="1.6"/>
+        </g>
+
+        <text class="s6bA" x="110" y="118" text-anchor="end">zero-shot</text>
+        <text class="s6bA" x="110" y="132" text-anchor="end">ahead</text>
+        <text class="s6bA" x="110" y="300" text-anchor="end">zero-shot</text>
+        <text class="s6bA" x="110" y="314" text-anchor="end">behind</text>
+
+        <text class="s6bL" x="154" y="96">Gilardi, Alizadeh and Kubli 2023</text>
+        <text class="s6bS" x="154" y="116">about 25 points above crowd workers</text>
+        <text class="s6bS" x="154" y="134">6,183 tweets and news articles</text>
+        <text class="s6bS" x="154" y="152">under $0.003 a label, thirty times cheaper</text>
+
+        <text class="s6bS" x="495" y="116">compared with fine-tuned models,</text>
+        <text class="s6bS" x="495" y="132">found zero-shot ahead:</text>
+        <text class="s6bL" x="495" y="152">none of these four</text>
+
+        <text class="s6bS" x="140" y="290">compared with crowd workers,</text>
+        <text class="s6bS" x="140" y="306">found zero-shot behind:</text>
+        <text class="s6bL" x="140" y="326">none of these four</text>
+
+        <text class="s6bL" x="506" y="224">Bucher and Martini 2024</text>
+        <text class="s6bS" x="506" y="242">fine-tuned smaller models win in all cases</text>
+        <text class="s6bS" x="506" y="259">vs GPT-3.5, GPT-4, Claude Opus, zero-shot</text>
+        <text class="s6bL" x="506" y="296">Kocon et al. 2023</text>
+        <text class="s6bS" x="506" y="314">about 25% average quality loss</text>
+        <text class="s6bS" x="506" y="331">vs the best models, across 25 tasks</text>
+        <text class="s6bL" x="506" y="368">Ziems et al. 2024</text>
+        <text class="s6bS" x="506" y="386">classification: no win over best fine-tuned</text>
+        <text class="s6bS" x="506" y="403">13 models, 25 benchmarks; useful collaborator</text>
+
+        <text class="s6bA" x="297" y="440" text-anchor="middle">crowd workers</text>
+        <text class="s6bA" x="652" y="440" text-anchor="middle">fine-tuned or best models</text>
+        <text class="s6bN" x="30" y="464">Horizontal: what zero-shot labelling was compared against. Vertical: the headline finding.</text>
+        <text class="s6bL" x="46" y="503">Different baselines, tasks and model generations: both readings can be true at once.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the studies split along the baseline: ahead of crowd workers, behind fine-tuned models, and no study here sits in the other two corners</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The case for: ahead of crowd workers, at a fraction of the price<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Gilardi, Alizadeh and Kubli gave ChatGPT the same annotation tasks as crowd workers on 6,183 tweets and news articles. Zero-shot, its accuracy "exceeds that of crowd workers by about 25 percentage points on average", at a per-annotation cost under $0.003, about thirty times cheaper than MTurk (Gilardi, Alizadeh and Kubli (2023), PNAS 120(30): e2305016120).</p>
+        <p>One detail worth knowing before you quote it: the arXiv preprint said twenty times cheaper and 2,382 tweets. The published PNAS version is the one to cite. The baseline is the important part: the comparison is against paid crowd workers, the usual way research teams got labels at scale.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The case against: behind models trained for the task<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p><strong>Bucher and Martini</strong> compared fine-tuned smaller models with GPT-3.5, GPT-4 and Claude Opus prompted zero-shot on text classification. The fine-tuned models "consistently and significantly outperform larger, zero-shot prompted models", and fine-tuning wins in all cases they tested (Bucher and Martini (2024), arXiv:2406.08660). The abstract gives no single headline number.</p>
+        <p><strong>Kocon and colleagues</strong> ran ChatGPT on 25 tasks against the best available models: "the average loss in quality of the ChatGPT model was about 25%" for zero-shot and few-shot evaluation (Kocon et al. (2023), arXiv:2302.10724).</p>
+        <p><strong>Ziems and colleagues</strong> tested 13 models on 25 computational social science benchmarks. On classification, LLMs "fail to outperform the best fine-tuned models"; they argue LLMs are most useful as collaborators alongside people, and found their written explanations often better than the crowd workers' reference explanations (Ziems et al. (2024), Computational Linguistics (arXiv:2305.03514)).</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Why both sides can be right at once<span class="mini">1 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p><strong>Different baselines.</strong> Beating crowd workers and losing to a fine-tuned model are not contradictory; crowd labels and a task-trained model are different bars. Your R5 at 0.790 is a task-trained model, not a crowd worker.</p>
+        <p><strong>Different tasks.</strong> Stance in political tweets is not complaint routing. A task where the categories need world knowledge favours a model that has read the world; a task with stable product vocabulary favours a model that has read your labels.</p>
+        <p><strong>Different model generations.</strong> These studies span 2023 to 2024 and several model versions. Results for one generation are evidence about that generation. None of them measured Ledgerly's six queues, and neither did the bench: that is the gap the capstone closes.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>What the bench adds, and what it leaves for you<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The bench measured six classical rungs on 600 held-out real complaints and printed the cost and audit columns for an LLM rung. It did not measure LLM accuracy: no complaint was sent anywhere. That is a deliberate boundary, not an omission to paper over. Anyone who quotes "the LLM scored X on our bench" from this work is quoting something that does not exist.</p>
+        <p>Remember the rebalanced sample whenever you compare accuracies: credit reporting is 30% of the bench's sample and 76.7% of the real 2023 rows. An LLM check on Ledgerly's own inbox will have Ledgerly's own mix, so compare both models on the same rows, never one model's bench number against another's vendor number.</p>
+      </div>
+    </details>
+
+    <div class="callout example">
+      <p><span class="ex-pill">Real world</span> <strong>Two slides, two papers, one meeting.</strong> In a steering meeting one team shows a paper where an LLM beats human annotators; the other shows a paper where trained models beat the LLM every time. The meeting ends without a decision because both slides are accurate. The way out is not a third paper. It is two hundred of the company's own documents, labelled by its own people, with both approaches scored on the same rows.</p>
+    </div>
+  </section>
+
+  <section class="section" id="part-3">
+    <div class="section-kicker">
+      <span class="klabel">Part 3 · covers reproducibility, drift and governance</span>
+      <h2>Audit, repeatability and what you can defend</h2>
+      <span class="tag concept">5 min live</span>
+    </div>
+    <p class="lede">A routing decision that affects a customer has to be explainable later: which model labelled this complaint, with what settings, and would it do the same again? A seeded, versioned classical pipeline answers that by construction. A hosted model can answer it too, but only if you build the logging deliberately.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 402" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A decision tree with three levels and four outcomes. Root, highlighted: are the categories fixed and already in your training labels? Yes leads to: do you have enough labelled examples for every queue? Yes: route with a classical model, fixed queues, many labels. No: LLM labels, then train a classical model, fixed queues, few labels. Root no leads to: will each output drive a decision someone has to defend? Yes: LLM in the loop with human review, open categories, decisions. No: LLM alone, low volume, exploratory. Note: each leaf is a legitimate choice.">
+        <defs>
+          <filter id="s6cSk" x="-3%" y="-3%" width="106%" height="106%"><feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="71" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.4" xChannelSelector="R" yChannelSelector="G"/></filter>
+          <pattern id="s6cHc" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(-38)"><line x1="0" y1="0" x2="0" y2="7" stroke="#592A22" stroke-width="1" opacity=".5"/></pattern>
+          <marker id="s6cAr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M1 1 L9 5 L1 9" fill="none" stroke="#2B1C18" stroke-width="1.6" stroke-linecap="round"/></marker>
+        </defs>
+        <style>
+          .s6cH { font: 800 12px Inter, sans-serif; fill: #2B1C18; }
+          .s6cL { font: 600 12px Inter, sans-serif; fill: #2B1C18; }
+          .s6cS { font: 400 11px Inter, sans-serif; fill: #5E4A44; }
+          .s6cA { font: 700 11px Inter, sans-serif; fill: #592A22; }
+          .s6cN { font: 400 12px Inter, sans-serif; fill: #5E4A44; }
+        </style>
+
+        <text class="s6cH" x="30" y="26">FOUR LEGITIMATE WAYS TO LABEL TEXT, AND THE QUESTIONS THAT CHOOSE</text>
+
+        <g filter="url(#s6cSk)" fill="none" stroke="#2B1C18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="290" y="44" width="300" height="60" rx="10" transform="rotate(-0.5 440 74)" fill="#A9C8E3"/>
+          <rect x="70" y="160" width="300" height="64" rx="10" transform="rotate(0.6 220 192)" fill="#FFFFFF"/>
+          <rect x="510" y="160" width="300" height="64" rx="10" transform="rotate(-0.6 660 192)" fill="#FFFFFF"/>
+          <path d="M440 106 L440 128 M220 128 L660 128"/>
+          <path d="M220 128 L220 156" marker-end="url(#s6cAr)"/>
+          <path d="M660 128 L660 156" marker-end="url(#s6cAr)"/>
+          <path d="M220 226 L220 256 M115 256 L325 256"/>
+          <path d="M115 256 L115 286" marker-end="url(#s6cAr)"/>
+          <path d="M325 256 L325 286" marker-end="url(#s6cAr)"/>
+          <path d="M660 226 L660 256 M555 256 L765 256"/>
+          <path d="M555 256 L555 286" marker-end="url(#s6cAr)"/>
+          <path d="M765 256 L765 286" marker-end="url(#s6cAr)"/>
+          <rect x="20" y="290" width="190" height="78" rx="10" transform="rotate(-1.5 115 329)" fill="#FFFFFF"/>
+          <rect x="230" y="290" width="190" height="78" rx="10" transform="rotate(1.2 325 329)" fill="#F8EEEB"/>
+          <rect x="460" y="290" width="190" height="78" rx="10" transform="rotate(-1.2 555 329)" fill="#FFFFFF"/>
+          <rect x="670" y="290" width="190" height="78" rx="10" transform="rotate(1.5 765 329)" fill="#F8EEEB"/>
+          <path d="M64 50 L64 112 M44 58 L92 58 L100 66 L92 74 L44 74 Z M88 84 L40 84 L32 92 L40 100 L88 100 Z" stroke-width="1.6"/>
+        </g>
+
+        <text class="s6cL" x="440" y="70" text-anchor="middle">Are the categories fixed, and already</text>
+        <text class="s6cL" x="440" y="88" text-anchor="middle">in your training labels?</text>
+        <text class="s6cA" x="226" y="150">yes</text>
+        <text class="s6cA" x="666" y="150">no</text>
+
+        <text class="s6cL" x="220" y="187" text-anchor="middle">Do you have enough labelled</text>
+        <text class="s6cL" x="220" y="205" text-anchor="middle">examples for every queue?</text>
+        <text class="s6cL" x="660" y="187" text-anchor="middle">Will each output drive a decision</text>
+        <text class="s6cL" x="660" y="205" text-anchor="middle">someone has to defend?</text>
+
+        <text class="s6cA" x="121" y="278">yes</text>
+        <text class="s6cA" x="331" y="278">no</text>
+        <text class="s6cA" x="561" y="278">yes</text>
+        <text class="s6cA" x="771" y="278">no</text>
+
+        <text class="s6cH" x="115" y="316" text-anchor="middle">Route with a</text>
+        <text class="s6cH" x="115" y="332" text-anchor="middle">classical model</text>
+        <text class="s6cS" x="115" y="354" text-anchor="middle">fixed queues, many labels</text>
+        <text class="s6cH" x="325" y="316" text-anchor="middle">LLM labels, then</text>
+        <text class="s6cH" x="325" y="332" text-anchor="middle">train a classical model</text>
+        <text class="s6cS" x="325" y="354" text-anchor="middle">fixed queues, few labels</text>
+        <text class="s6cH" x="555" y="316" text-anchor="middle">LLM in the loop</text>
+        <text class="s6cH" x="555" y="332" text-anchor="middle">with human review</text>
+        <text class="s6cS" x="555" y="354" text-anchor="middle">open categories, decisions</text>
+        <text class="s6cH" x="765" y="324" text-anchor="middle">LLM alone</text>
+        <text class="s6cS" x="765" y="354" text-anchor="middle">low volume, exploratory</text>
+
+        <text class="s6cN" x="30" y="390">Each leaf is a legitimate choice. Labels, volume and who must defend the output decide which fits.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - two questions about your labels and your accountability sort most text jobs into one of four set-ups, none of them wrong in general</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Pin it, log it, replay it<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Everything on the bench is fixed: the sample was drawn with seed 2023, the shuffle trap uses seed 13, the logistic model's training order is seeded, and the sample itself is a file you can hash. Run R5 tomorrow and you get 0.790 again, 474 of 600. That is what lets the bench number go into a note.</p>
+        <p>A hosted model can be made auditable, but it takes deliberate work. <strong>Pin</strong> the exact model version, the full prompt text and every generation setting. <strong>Log</strong> every label with the complaint id, the version, a hash of the prompt and the time. <strong>Replay</strong> a fixed set of labelled complaints on a schedule and on every vendor change, and compare. Even with all three, two runs of the same model may not agree on every complaint; measure how often they do, and put the figure in the note.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Labels and data drift too<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p><strong>The label schema moved mid-year.</strong> In August 2023 the CFPB's product "Credit card or prepaid card" stops and "Credit card" and "Prepaid card" begin, and the long credit reporting product name is shortened the same month. Ledgerly's sample maps both versions to one queue, and the corpus card records it. A label schema is part of what you audit: a classifier trained before the change, or a prompt written before it, is answering a slightly different question afterwards.</p>
+        <p><strong>The data can disappear.</strong> The CFPB's current field list ("How we share complaint data", modified Sept. 14, 2026) has no consumer complaint narrative field, and neither does today's export. Every narrative on the bench comes from a February 2024 snapshot. Text you depend on but do not own is a data dependency with no service agreement; the same is true of a hosted model you do not control.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>When the big model earns its place, and when it does not<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p><strong>The big model tends to earn its place when:</strong></p>
+        <ul>
+          <li>the categories are open-ended or not in your training labels yet (a new complaint type, "anything about a scam");</li>
+          <li>there is very little labelled data and no budget to make more;</li>
+          <li>the job is explanation or extraction (summarise, pull the amount and date, say why) rather than routing to a fixed queue;</li>
+          <li>volume is low enough that a person can review what comes out.</li>
+        </ul>
+        <p><strong>The classical model tends to win when:</strong></p>
+        <ul>
+          <li>the labels are stable and already exist;</li>
+          <li>volume is high and the answer is needed fast;</li>
+          <li>audit demands the same label on replay, years later;</li>
+          <li>it already meets the bar: R5 at 0.790 on six fixed queues, with its weakest queue (debt collection recall 0.608) named and understood.</li>
+        </ul>
+        <p>Neither list is a verdict. "Tends to" means: check it on your own rows.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Embeddings and retrieval belong elsewhere<span class="mini">1 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Between a bag of words and a full LLM call sits a middle rung: dense embeddings, where each complaint becomes a vector that captures meaning beyond shared words, fed to a small classifier or used to retrieve similar cases for an LLM. That rung is taught properly in <a href="https://phoebefu6.github.io/learn-rag-with-phoebe/courses/b1-embeddings.html">RAG, embeddings (b1)</a>, and retrieval for an LLM in <a href="https://phoebefu6.github.io/learn-rag-with-phoebe/courses/b4-retrieval-basics.html">RAG, retrieval basics (b4)</a>. Treat it as a fifth option for the note, and score it on the same 200 rows.</p>
+      </div>
+    </details>
+
+    <div class="callout example">
+      <p><span class="ex-pill">Real world</span> <strong>The quarter nobody could reproduce.</strong> An operations team tags customer emails with a hosted model through an unpinned alias. In the next quarter the share tagged "billing dispute" shifts noticeably, and the board asks whether disputes really rose. Nobody can say: the vendor updated the model in between, and the team logged labels but not versions. The fix took an afternoon (pin, log, replay a fixed labelled set monthly); the missing quarter could not be recovered.</p>
+    </div>
+  </section>
+
+  <section class="section" id="demo-1">
+    <div class="section-kicker">
+      <span class="klabel">Build-along</span>
+      <h2>Ledgerly's signed build-or-buy note</h2>
+      <span class="tag demo">★ 22 min · everyone builds</span>
+    </div>
+    <p class="lede">A build-or-buy note is one page a stranger can audit: the decision, the options considered, the evidence you measured, the cost you modelled, how you will keep it honest, who owns it and when it is reviewed. You will read the bench one last time, separate measured from modelled, design the check that would measure an LLM on your own data, write the rule before you see the result, and sign (Constructed Ledgerly example; the complaints are real).</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 378" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The anatomy of the note as a page with seven bands, each with an arrow to where its content comes from. 1, decision, highlighted: one position, stated so it can be checked later. 2, options: the four outcomes from Part 3. 3, evidence from the bench: R5 0.790, debt collection recall 0.608, both traps. 4, modelled cost: 0.39 dollars per 1,000 at placeholder prices, re-verify. 5, audit plan: pin model, prompt, settings, log every label. 6, owner: a named person, with a signature doodle. 7, sign-off date: and the date it will be reviewed. Note: the bench fills parts 3 and 4; parts 1, 6 and 7 are yours.">
+        <defs>
+          <filter id="s6dSk" x="-3%" y="-3%" width="106%" height="106%"><feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="73" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.4" xChannelSelector="R" yChannelSelector="G"/></filter>
+          <pattern id="s6dHc" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(-38)"><line x1="0" y1="0" x2="0" y2="7" stroke="#592A22" stroke-width="1" opacity=".5"/></pattern>
+          <marker id="s6dAr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M1 1 L9 5 L1 9" fill="none" stroke="#2B1C18" stroke-width="1.6" stroke-linecap="round"/></marker>
+        </defs>
+        <style>
+          .s6dH { font: 800 12px Inter, sans-serif; fill: #2B1C18; }
+          .s6dL { font: 600 12px Inter, sans-serif; fill: #2B1C18; }
+          .s6dS { font: 400 11px Inter, sans-serif; fill: #5E4A44; }
+          .s6dB { font: 800 11px Inter, sans-serif; fill: #1E4566; }
+          .s6dN { font: 400 12px Inter, sans-serif; fill: #5E4A44; }
+        </style>
+
+        <text class="s6dH" x="30" y="26">THE NOTE'S ANATOMY: SEVEN PARTS, EACH WITH A SOURCE</text>
+        <text class="s6dB" x="474" y="26">Constructed Ledgerly example</text>
+
+        <g filter="url(#s6dSk)" fill="none" stroke="#2B1C18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="30" y="44" width="400" height="300" rx="10" transform="rotate(-0.4 230 194)" fill="#FFFFFF"/>
+          <rect x="44" y="56" width="372" height="34" rx="6" transform="rotate(0.3 230 73)" fill="#A9C8E3"/>
+          <rect x="44" y="96" width="372" height="34" rx="6" transform="rotate(-0.3 230 113)" fill="#F8EEEB"/>
+          <rect x="44" y="136" width="372" height="34" rx="6" transform="rotate(0.3 230 153)" fill="#F8EEEB"/>
+          <rect x="44" y="176" width="372" height="34" rx="6" transform="rotate(-0.3 230 193)" fill="#F8EEEB"/>
+          <rect x="44" y="216" width="372" height="34" rx="6" transform="rotate(0.3 230 233)" fill="#F8EEEB"/>
+          <rect x="44" y="256" width="372" height="34" rx="6" transform="rotate(-0.3 230 273)" fill="#F8EEEB"/>
+          <rect x="44" y="296" width="372" height="34" rx="6" transform="rotate(0.3 230 313)" fill="#F8EEEB"/>
+          <path d="M300 279 q10 -14 20 0 t20 0 t20 0 t20 0 M384 268 L400 284" stroke-width="1.6"/>
+          <path d="M422 73 L464 73" marker-end="url(#s6dAr)"/>
+          <path d="M422 113 L464 113" marker-end="url(#s6dAr)"/>
+          <path d="M422 153 L464 153" marker-end="url(#s6dAr)"/>
+          <path d="M422 193 L464 193" marker-end="url(#s6dAr)"/>
+          <path d="M422 233 L464 233" marker-end="url(#s6dAr)"/>
+          <path d="M422 273 L464 273" marker-end="url(#s6dAr)"/>
+          <path d="M422 313 L464 313" marker-end="url(#s6dAr)"/>
+        </g>
+
+        <text class="s6dL" x="58" y="78">1 · Decision</text>
+        <text class="s6dL" x="58" y="118">2 · Options</text>
+        <text class="s6dL" x="58" y="158">3 · Evidence from the bench</text>
+        <text class="s6dL" x="58" y="198">4 · Modelled cost</text>
+        <text class="s6dL" x="58" y="238">5 · Audit plan</text>
+        <text class="s6dL" x="58" y="278">6 · Owner</text>
+        <text class="s6dL" x="58" y="318">7 · Sign-off date</text>
+
+        <text class="s6dS" x="474" y="77">one position, stated so it can be checked later</text>
+        <text class="s6dS" x="474" y="117">the four outcomes from Part 3, not just two</text>
+        <text class="s6dS" x="474" y="157">R5 0.790, debt collection recall 0.608, both traps</text>
+        <text class="s6dS" x="474" y="197">$0.39 per 1,000 at placeholder prices, re-verify</text>
+        <text class="s6dS" x="474" y="237">pin model, prompt, settings; log every label</text>
+        <text class="s6dS" x="474" y="277">a named person, not a team</text>
+        <text class="s6dS" x="474" y="317">a date, and the date it will be reviewed</text>
+
+        <text class="s6dN" x="30" y="366">The bench fills parts 3 and 4. Parts 1, 6 and 7 are yours: a note without them is a draft.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - every part of the note points at its source; the evidence and cost come from the bench, the decision and the signature come from you</figcaption>
+    </figure>
+
+    <div class="steps">
+      <div class="step">
+        <p><strong>Read the bench one last time, then price the alternative.</strong> The bench below starts on R5. Read the headline: 0.790, 474 of 600, macro F1 0.791. Then find the weakest queue in the per-queue table: debt collection, recall 0.608, with 29 of 120 debt collection complaints routed to credit reporting (collectors report debts to the bureaus, so the words overlap). Click R0 and R4 for the floor and the step below. Remember the sample is rebalanced: credit reporting is 30% here and 76.7% of the real 2023 rows, so accuracy on Ledgerly's real mix would differ. Finally, in the modelled panel, replace the placeholder prices with today's list prices from a vendor you would actually use, and write down the date you checked.</p>
+        <div class="prompt-box good"><span class="label">★ Step 1 · what to copy off the screen</span>R5 accuracy / macro F1:            0.790 / 0.791  (474 of 600)
+Weakest queue (recall):             debt collection 0.608
+Biggest misroute:                   debt collection to credit reporting, 29 of 120
+Floor (R0) and step below (R4):     0.300 and 0.778
+Modelled LLM cost per 1,000:        $______ at $____ / $____ per million tokens
+Prices checked on (date, vendor):   ______________________</div>
+        <div class="ntx-mount" data-ntx="bench" data-rungs="r0,r4,r5" data-start="r5"></div>
+      </div>
+
+      <div class="step">
+        <p><strong>List what the bench measured and what it did not.</strong> This list is the most important honesty in the note. A reader who sees only the first column will assume the second was measured too.</p>
+        <div class="prompt-box good"><span class="label">★ Step 2 · measured versus not measured</span>MEASURED on 600 held-out real complaints (2023, rebalanced sample):
+  accuracy, macro F1, per-queue precision and recall, the confusion table
+  for R0 to R5; both traps (R4 on training rows 0.975; shuffled labels 0.195);
+  repeatability (same seed, same number).
+MODELLED, not measured:
+  LLM cost per 1,000 complaints (assumed tokens per word, prompt length,
+  output length; placeholder prices, re-verified on ______).
+NOT MEASURED at all:
+  LLM accuracy on these queues. LLM repeatability. Latency under load.
+  Accuracy on Ledgerly's real queue mix. Accuracy on full-length text.</div>
+      </div>
+
+      <div class="step">
+        <p><strong>Design the 200-complaint check before anyone buys.</strong> Take 200 recent complaints from your own inbox, spread across all six queues, and have two people label them without seeing any model's answer; settle their disagreements and keep that as the reference. Run R5 and the pinned LLM set-up on the same 200 rows, and run the LLM twice to see how often it agrees with itself. With 200 rows, one complaint is half a percentage point of accuracy, so treat small gaps as noise.</p>
+        <div class="prompt-box good"><span class="label">★ Step 3 · Python, scoring the check (pandas + scikit-learn)</span>import pandas as pd
+from sklearn.metrics import accuracy_score, f1_score
+
+# one row per complaint: id, gold (agreed human label),
+# r5_label, llm_run1, llm_run2 (same pinned model, prompt and settings)
+df = pd.read_csv("ledgerly_check_200.csv")
+
+for col in ["r5_label", "llm_run1"]:
+    acc = accuracy_score(df["gold"], df[col])
+    mf1 = f1_score(df["gold"], df[col], average="macro")
+    print(col, "accuracy", round(acc, 3), "macro F1", round(mf1, 3))
+
+print("LLM agrees with itself:", round((df["llm_run1"] == df["llm_run2"]).mean(), 3))
+print(pd.crosstab(df["gold"], df["llm_run1"]))
+# your numbers will differ: this is your own labelled sample, not the bench</div>
+      </div>
+
+      <div class="step">
+        <p><strong>Write the decision rule before you see the result.</strong> A rule written afterwards bends to fit the numbers. Fill the blanks now, with the people who will sign, and do not change them once the check has run.</p>
+        <div class="prompt-box good"><span class="label">★ Step 4 · the decision rule (Constructed Ledgerly example)</span>We move routing to the LLM set-up only if, on the same 200 labelled complaints:
+  macro F1 is at least ____ points above R5,
+  debt collection recall is at least ____,
+  the LLM agrees with itself on at least ____% of complaints,
+  cost per 1,000 at prices checked on ______ is under $____,
+  and legal has approved sending complaint text to the vendor.
+Otherwise we keep R5, and use the LLM for: ______________________.
+We re-run this check on ________, or sooner if a queue is renamed or split.</div>
+      </div>
+
+      <div class="step">
+        <p><strong>Write and sign page 6 of the playbook.</strong> The bench numbers are filled in. The position is yours: route with R5, LLM labels then retrain, LLM in the loop with review, or LLM alone, for all queues or some. Fill every blank or the note is a draft.</p>
+        <div class="prompt-box good"><span class="label">★ Step 5 · Ledgerly text playbook, page 6: signed build-or-buy note (Constructed Ledgerly example)</span>DECISION: For routing complaints to six product queues we will ____________
+  ______________________________________________ (one sentence).
+OPTIONS CONSIDERED: route with a classical model (R5); LLM labels then train a
+  classical model; LLM in the loop with human review; LLM alone.
+EVIDENCE (bench, 600 held-out real CFPB complaints, 2023; sample REBALANCED,
+  credit reporting 30% here vs 76.7% of real 2023 rows):
+  R0 0.300 | R4 0.778 (macro F1 0.779) | R5 0.790 (macro F1 0.791, 474 of 600)
+  Weakest queue: debt collection recall 0.608; 29 of 120 to credit reporting.
+  Traps: R4 on training rows 0.975; shuffled labels 0.195. Misroutes per 1,000 at R5: 210.
+  LLM accuracy: NOT MEASURED. 200-complaint check result: ______ (date ______).
+MODELLED COST (not a quote): $______ per 1,000 complaints at $____ / $____ per
+  million tokens, checked on ______ with ______. Constructed volume 30,000 a month
+  = about $______ a month. Placeholder was $0.39 per 1,000 / about $11.68 a month.
+AUDIT PLAN: pin model version ______, prompt hash ______, settings ______;
+  log id, label, version, time for every complaint; replay the 200 monthly.
+  Label schema owner: ______ (queue renames, as in Aug 2023, trigger a re-check).
+OWNER: ______________________   SIGNED: ______________________
+SIGN-OFF DATE: ____________     REVIEW BY: ____________</div>
+      </div>
+    </div>
+
+    <div class="callout tip">
+      <p><strong>A note you can be wrong in is a note worth signing.</strong> "We will evaluate options" cannot be checked, so it cannot fail and cannot teach anyone anything. "We keep R5 for routing and use an LLM only to summarise debt collection complaints for review, re-checked in six months" can be wrong, and that is exactly why the head of operations can approve it.</p>
+    </div>
+  </section>
+
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>After the last session</h2>
+      <span class="tag exercise">45 min</span>
+    </div>
+    <ol>
+      <li><strong>Run the 200-complaint check on your own text.</strong> Use step 3's design on a pile you own: tickets, reviews, emails. Score a classical model and one pinned LLM set-up on the same rows, run the LLM twice, and fill the decision rule you wrote before you looked.</li>
+      <li><strong>Price coding 2,000 survey comments both ways.</strong> For one open-text question, count the words and use the bench's assumptions (1.3 tokens per word, a fixed instruction, a short answer) with today's prices; then estimate the hours to hand-label enough comments to train a classifier. Which way wins if the question repeats every quarter? Questionnaire design itself lives in <a href="https://phoebefu6.github.io/learn-survey-design-with-phoebe/">Survey Design</a>.</li>
+      <li><strong>Write the drift watch.</strong> List three changes that would force a re-check of page 6 (a queue renamed or split, a vendor model version retired, a source field withdrawn), and who gets told for each.</li>
+      <li><strong>Read one of the four abstracts yourself.</strong> Pick Gilardi, Bucher and Martini, Kocon or Ziems, and write two lines: what was the baseline, and what would have to be true for the result to apply to your text.</li>
+    </ol>
+  </section>
+
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions</h2>
+    </div>
+    <p>Clear all three and session 6 gets stamped in your passport.</p>
+
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">1 · Gilardi et al. find zero-shot ChatGPT about 25 points ahead; Bucher and Martini find fine-tuned smaller models ahead in all cases. How can both be right?</p>
+      <button class="qopt" type="button">A · They cannot; one of the papers must contain an error</button>
+      <button class="qopt" type="button">B · They compared against different baselines (crowd workers versus fine-tuned models), on different tasks and model generations</button>
+      <button class="qopt" type="button">C · Bucher and Martini used much larger zero-shot models than anyone else</button>
+      <button class="qopt" type="button">D · Accuracy on labelling tasks cannot be measured, so both are opinions</button>
+      <p class="qwhy">Beating crowd workers and losing to a task-trained model are different claims about different bars. Neither paper measured your queues, which is why the note calls for a check on your own rows.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="3">
+      <p class="qtext">2 · The bench's LLM rung is "modelled, not measured". What does that oblige you to do?</p>
+      <button class="qopt" type="button">A · Quote $0.39 per 1,000 as the vendor's price</button>
+      <button class="qopt" type="button">B · Assume the LLM beats R5's 0.790, since it costs more to build</button>
+      <button class="qopt" type="button">C · Drop the LLM option from the note entirely</button>
+      <button class="qopt" type="button">D · Re-verify current prices, and measure LLM accuracy on your own labelled sample before the decision</button>
+      <p class="qwhy">The cost is a calculation with placeholder prices and stated assumptions; the accuracy was never computed. Both gaps are closed by you: a dated price check and a labelled check on the same rows as R5.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">3 · Which situation most favours using an LLM?</p>
+      <button class="qopt" type="button">A · A few hundred open-text answers a quarter, no labels, and categories nobody has defined yet</button>
+      <button class="qopt" type="button">B · 30,000 complaints a month into six fixed queues, with 2,400 labelled examples</button>
+      <button class="qopt" type="button">C · A regulator requires the same label on replay years later, and no versions are logged</button>
+      <button class="qopt" type="button">D · A stable taxonomy where a classical model at 0.790 already meets the agreed bar</button>
+      <p class="qwhy">Open-ended categories, no labelled data and low volume a person can review are where a large model earns its place. Fixed queues, high volume, plenty of labels and strict replay favour the classical model.</p>
+    </div>
+
+    <p class="quiz-score"></p>
+  </section>
+
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Sources covered</span>
+      <h2>What this session teaches, and where it came from</h2>
+    </div>
+    <div class="covered">
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Zero-shot beats crowd workers</span><span class="note">Gilardi, Alizadeh and Kubli (2023), PNAS 120(30): e2305016120; abstract read at source (the arXiv preprint's figures differ; the PNAS version is cited)</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Fine-tuned smaller models win</span><span class="note">Bucher and Martini (2024), arXiv:2406.08660; abstract read at source; no numeric headline in the abstract</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">About 25% average quality loss</span><span class="note">Kocon et al. (2023), arXiv:2302.10724; abstract read at source; venue not read</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">LLMs as collaborators, not replacements</span><span class="note">Ziems et al. (2024), Computational Linguistics (arXiv:2305.03514); read at source; volume and pages not read</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">CFPB complaint data and its field list</span><span class="note">"How we share complaint data", consumerfinance.gov, page modified Sept. 14, 2026; read at source (no narrative field today); label rename of Aug 2023 read in the data</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Bench numbers (R0, R4, R5, traps)</span><span class="note">Computed by the bench on the shipped sample; a plain-Python reference run gives the same values</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">Modelled LLM rung</span><span class="note">Priced, not measured: stated token assumptions and placeholder prices; re-verify the vendor's current list; LLM accuracy not measured</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">Embeddings and retrieval</span><span class="note">Named as a middle option only; taught in RAG b1 and b4</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Ledgerly</span><span class="note">Constructed example, including the 30,000 a month volume; the complaints are real, the team is fictional</span></div>
+    </div>
+    <p class="mono" style="margin-top:14px">Every fact on this page, and its verification tier, is recorded in the course's source map.</p>
+  </section>
+
+  <section class="cheat" id="cheatsheet">
+    <h3>Session 6 cheat sheet <span>· pin this</span></h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>Price it, then look past the price</b><span>$0.39 per 1,000 at placeholder prices; re-verify. Maintenance, latency, limits and data handling decide it.</span></div>
+      <div class="cheat-item"><b>Read the baseline first</b><span>Ahead of crowd workers (Gilardi) and behind fine-tuned models (Bucher and Martini, Kocon, Ziems) can both be true.</span></div>
+      <div class="cheat-item"><b>Modelled is not measured</b><span>The bench priced an LLM rung and never scored it. Say so in the note, in words.</span></div>
+      <div class="cheat-item"><b>Pin, log, replay</b><span>Model version, prompt, settings; every label with its version; a fixed labelled set rerun on a schedule.</span></div>
+      <div class="cheat-item"><b>Schemas and sources drift</b><span>Queues get renamed (Aug 2023); fields get withdrawn (narratives). Both trigger a re-check.</span></div>
+      <div class="cheat-item"><b>Rule first, check second, sign</b><span>200 of your own labelled rows, both models, same rows; a decision rule written before; an owner and a date.</span></div>
+    </div>
+  </section>
+
+  <div class="callout next">
+    <span class="nx-pill">Where to go next</span>
+    <p>For dense embeddings and retrieval, the middle rung between a bag of words and an LLM call, continue with <a href="https://phoebefu6.github.io/learn-rag-with-phoebe/courses/b1-embeddings.html">RAG: embeddings</a> and <a href="https://phoebefu6.github.io/learn-rag-with-phoebe/courses/b4-retrieval-basics.html">RAG: retrieval basics</a>. For the classifiers themselves as methods, starting from the derivation of naive Bayes, go to <a href="https://phoebefu6.github.io/learn-classification-regression-with-phoebe/courses/c6-naive-bayes.html">Classification &amp; Regression</a>. Everything else lives on <a href="https://phoebefu6.github.io/learn-with-phoebe/">the Learn with Phoebe hub</a>.</p>
+  </div>
+
+  <footer class="pagefoot">
+    <span>Session 6 of 6 · learn-nlp-text-analytics-with-phoebe · by Phoebe Fu &nbsp;·&nbsp; 📚 <a href="https://phoebefu6.github.io/learn-with-phoebe/">Learn with Phoebe ↗</a></span>
+    <span><a href="05-search-and-themes.html">← Prev: Search and themes</a> &nbsp;·&nbsp; <a href="../index.html">Course home</a></span>
+  </footer>
+
+</main>
+
+<script src="../assets/ntx-sample.js?v=2"></script>
+<script src="../assets/ntx-live.js?v=2"></script>
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

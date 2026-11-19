@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- social:start -->
+<meta name="description" content="Session 4 of 6. Run the whole routing ladder on 600 held-out real complaints in your browser, from majority class to a tuned logistic model, then spring the two traps that make a classifier look better than it is.">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Learn with Phoebe">
+<meta property="og:title" content="The text bench - learn NLP and text analytics with phoebe">
+<meta property="og:description" content="Session 4 of 6. Six rungs, two traps and a modelled LLM rung on 600 held-out real complaints, computed in your browser.">
+<meta property="og:url" content="https://phoebefu6.github.io/learn-nlp-text-analytics-with-phoebe/courses/04-the-text-bench.html">
+<meta property="og:image" content="https://phoebefu6.github.io/learn-nlp-text-analytics-with-phoebe/assets/og-cover.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="The text bench - learn NLP and text analytics with phoebe">
+<meta name="twitter:description" content="Session 4 of 6. Six rungs, two traps and a modelled LLM rung on real complaints.">
+<meta name="twitter:image" content="https://phoebefu6.github.io/learn-nlp-text-analytics-with-phoebe/assets/og-cover.png">
+<!-- social:end -->
+<title>Session 4 · The text bench - learn NLP and text analytics with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=2">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-nlp-text-analytics-with-phoebe</a> / Session 4 of 6</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn NLP &amp; Text Analytics with Phoebe · Session 4 of 6</div>
+    <h1>The text bench: <span class="accent">every rung, on held-out complaints</span></h1>
+    <p class="sub">Tonight every method from sessions 1 to 3 runs on the same 600 complaints the models have never seen, in your browser, in a few seconds. Six rungs from "send everything to the biggest queue" to a tuned logistic model, one rung that gets worse when you would expect better, two traps that make any classifier look brilliant, and a modelled large-language-model rung that prices the alternative without pretending to measure it.</p>
+    <div class="chip-row">
+      <span class="chip level">🟠 Bench</span>
+      <span class="chip audience">Analysts and data scientists handed a pile of free text</span>
+      <span class="chip audience">Everything computed in the page</span>
+      <span class="chip time">45 min</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Welcome</span>
+      <span class="a2" style="flex:4">3-18 · Ladder, tuning, traps</span>
+      <span class="a3" style="flex:5">18-40 · Build-along: run the bench</span>
+      <span class="a4" style="flex:1">40-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>Where we start</h2>
+    </div>
+    <p class="lede">Sessions 1 to 3 built the table, weighted it and trained two readable classifiers. A bench puts every choice on the same footing: one fixed set of 600 held-out complaints, one scoring rule, every rung run fresh. The Constructed Ledgerly example needs a number it can defend to its head of operations, and a defence against the two ways teams fool themselves with text classifiers. The 600 complaints are real CFPB narratives from 2023, split off before any choice was made and never used to make one.</p>
+
+    <div class="legend">
+      <span class="pill">🎫 Clear all three quiz questions to stamp your passport</span>
+      <span class="pill">Live = presented in the 45 minutes</span>
+      <span class="pill">Self-study = the full depth, after class</span>
+      <span class="pill">★ Build-along = do it yourself, in the page</span>
+    </div>
+
+    <div class="callout win">
+      <p><strong>★ What you walk out with tonight.</strong> Page 4 of Ledgerly's text playbook: the full ladder with accuracy and macro F1 for every rung, the setting the validation split chose, both trap rows (the inflated number and the broken-labels number) next to the honest one, and the modelled cost of the LLM alternative with its assumptions written out.</p>
+    </div>
+  </section>
+
+  <section class="section" id="part-1">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers the six rungs and two numbers per rung</span>
+      <h2>The ladder, rung by rung</h2>
+      <span class="tag concept">6 min live</span>
+    </div>
+    <p class="lede">Every rung is scored twice. Accuracy counts how many of the 600 complaints land in the right queue. Macro F1 averages the F1 of all six queues equally, so a rung that ignores the small queues cannot hide behind the big one. Read the two numbers together, and watch rung 3.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 370" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Accuracy on 600 held-out complaints for six rungs. R0 majority queue 0.300, macro F1 0.077. R1 keyword rules 0.610, macro F1 0.615. R2 counts plus naive Bayes 0.762, macro F1 0.760. R3 TF-IDF plus naive Bayes 0.608, macro F1 0.569, highlighted as the drop. R4 TF-IDF plus bigrams plus logistic 0.778, macro F1 0.779. R5 tuned 0.790, macro F1 0.791. A dashed line marks the majority rung at 0.300.">
+        <defs>
+          <filter id="s4aSk" x="-3%" y="-3%" width="106%" height="106%"><feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="41" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.4" xChannelSelector="R" yChannelSelector="G"/></filter>
+          <pattern id="s4aHc" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(-38)"><line x1="0" y1="0" x2="0" y2="7" stroke="#592A22" stroke-width="1" opacity=".5"/></pattern>
+          <marker id="s4aAr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M1 1 L9 5 L1 9" fill="none" stroke="#2B1C18" stroke-width="1.6" stroke-linecap="round"/></marker>
+        </defs>
+        <style>
+          .s4aH { font: 800 12px Inter, sans-serif; fill: #2B1C18; }
+          .s4aL { font: 600 12px Inter, sans-serif; fill: #2B1C18; }
+          .s4aS { font: 400 11px Inter, sans-serif; fill: #5E4A44; }
+          .s4aB { font: 800 11px Inter, sans-serif; fill: #1E4566; }
+          .s4aV { font: 800 12px Inter, sans-serif; fill: #3B1A15; }
+          .s4aA { font: 700 11px Inter, sans-serif; fill: #592A22; }
+          .s4aN { font: 400 12px Inter, sans-serif; fill: #5E4A44; }
+        </style>
+
+        <text class="s4aH" x="30" y="26">ACCURACY ON 600 HELD-OUT COMPLAINTS, WITH MACRO F1</text>
+        <text class="s4aA" x="404" y="50" text-anchor="middle">majority 0.300</text>
+
+        <g filter="url(#s4aSk)" fill="none" stroke="#2B1C18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="260" y="64" width="144" height="28" rx="6" fill="url(#s4aHc)"/>
+          <rect x="260" y="110" width="293" height="28" rx="6" fill="#F8EEEB"/>
+          <rect x="260" y="156" width="366" height="28" rx="6" fill="#F8EEEB"/>
+          <rect x="260" y="202" width="292" height="28" rx="6" fill="#A9C8E3"/>
+          <rect x="260" y="248" width="373" height="28" rx="6" fill="#F8EEEB"/>
+          <rect x="260" y="294" width="379" height="28" rx="6" fill="#DDB8AD"/>
+          <path d="M404 56 L404 98" stroke="#592A22" stroke-dasharray="5 4" stroke-width="1.5"/>
+        </g>
+
+        <text class="s4aL" x="240" y="83" text-anchor="end">R0 Majority queue</text>
+        <text class="s4aL" x="240" y="129" text-anchor="end">R1 Keyword rules</text>
+        <text class="s4aL" x="240" y="175" text-anchor="end">R2 Counts + naive Bayes</text>
+        <text class="s4aL" x="240" y="221" text-anchor="end">R3 TF-IDF + naive Bayes</text>
+        <text class="s4aL" x="240" y="267" text-anchor="end">R4 + bigrams + logistic</text>
+        <text class="s4aL" x="240" y="313" text-anchor="end">R5 Tuned on validation</text>
+
+        <text class="s4aV" x="414" y="83">0.300 · F1 0.077</text>
+        <text class="s4aV" x="563" y="129">0.610 · F1 0.615</text>
+        <text class="s4aV" x="636" y="175">0.762 · F1 0.760</text>
+        <text class="s4aV" x="562" y="221">0.608 · F1 0.569</text>
+        <text class="s4aB" x="562" y="237">better weights, worse model</text>
+        <text class="s4aV" x="643" y="267">0.778 · F1 0.779</text>
+        <text class="s4aV" x="649" y="313">0.790 · F1 0.791</text>
+
+        <text class="s4aN" x="30" y="352">Bars on a 0 to 1 scale. Computed in the page; a plain-Python reference run prints the same values.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - each rung adds one idea; TF-IDF makes naive Bayes worse, and the tuned logistic model ends 0.490 above the majority rung</figcaption>
+    </figure>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>R0 and R1: the floor, and the rules a team writes on day one<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p><strong>R0 sends every complaint to credit reporting</strong>, the biggest queue in the training rows. Accuracy 0.300 (180 of 600), macro F1 0.077: five queues get nothing. Any model that does not clearly beat this has learned nothing, and on the real, unbalanced 2023 mix (76.7% credit reporting) this rung would score far higher while still being useless. That is why accuracy never travels alone.</p>
+        <p><strong>R1 is six keyword lists</strong> checked in order (student loan words first, then vehicle, collection, banking, "card", credit reporting) with the majority queue as the fallback. Accuracy 0.610, macro F1 0.615. Read its table in the widget: credit reporting recall is 0.922, but its precision is 0.466, because everything the rules miss falls through to it. Card recall is 0.333: plenty of card complaints never say "card" in their first 50 words.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>R2 to R5: naive Bayes, the surprising drop, logistic regression, tuning<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p><strong>R2, counts and naive Bayes</strong> (add-one smoothing, the scikit-learn default alpha of 1.0): 0.762. A few lines of counting and smoothing beat the hand-written rules by 0.152. (The bench to try every rung yourself is in the build-along below.)</p>
+        <p><strong>R3 swaps counts for TF-IDF and drops to 0.608.</strong> Naive Bayes multiplies word probabilities estimated from summed weights. TF-IDF with length normalisation shrinks every value below 1, so the evidence from the words becomes small next to the class prior, and the model falls back on the biggest queue: it gets 175 of 180 credit reporting complaints right and only 0.283 of vehicle loans. A better weighting for one model is a worse one for another; session 2's weights were chosen for comparing documents, not for this model.</p>
+        <p><strong>R4, TF-IDF with bigrams into logistic regression</strong> (ten passes of stochastic gradient descent, fixed seed): 0.778. <strong>R5 lets a validation split choose among twelve settings</strong> and reaches 0.790, 474 of 600. The last 0.012 is real but small; most of the gain arrived at R2.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Why macro F1, and when to report weighted F1 instead<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Macro F1 gives the 60 vehicle-loan complaints the same vote as the 180 credit-reporting ones. That matches a routing question where every queue has an owner who must not be starved. If the cost of a mistake really is proportional to volume, a weighted average fits better. Pick the average that matches who pays for errors, write it on the bench page, and keep accuracy beside it. The definitions of precision, recall and F1 are taught in full in <a href="https://phoebefu6.github.io/learn-intro-ml-with-phoebe/courses/b7-classification-metrics.html">Intro to ML, session b7</a>; here we only read them on text.</p>
+      </div>
+    </details>
+
+    <div class="callout example">
+      <p><span class="ex-pill">Real world</span> <strong>The 92% classifier.</strong> A team reports 92% accuracy on its ticket router and is congratulated. Its biggest category is 90% of tickets. Macro F1 would have shown the small categories at almost zero, and the 2-point gain over "always say the biggest category" would have been the honest headline. On the real 2023 complaint mix, R0 alone would score about 0.77.</p>
+    </div>
+  </section>
+
+  <section class="section" id="part-2">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers validation splits and the once-only test set</span>
+      <h2>Tuning without touching the test set</h2>
+      <span class="tag concept">4 min live</span>
+    </div>
+    <p class="lede">Every setting you compare on the held-out rows leaks a little of them into your choice. Do it twelve times and the reported number is partly a selection effect. R5 never looks at the 600 held-out complaints until the very end: it carves its own validation set out of the training rows.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 286" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Five steps. 1, 2,400 training rows. 2, fit on 1,800 and check on 600: every fourth training row is the validation set. 3, twelve settings scored on validation; best 0.787, row 8. 4, refit the chosen setting, logistic with the stemmer and learning rate 2, on all 2,400. 5, score the 600 held-out rows once: 0.790, highlighted. A dashed box underneath: held-out 600, untouched until step 5, with an arrow to step 5.">
+        <defs>
+          <filter id="s4bSk" x="-3%" y="-3%" width="106%" height="106%"><feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="43" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.4" xChannelSelector="R" yChannelSelector="G"/></filter>
+          <pattern id="s4bHc" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(-38)"><line x1="0" y1="0" x2="0" y2="7" stroke="#592A22" stroke-width="1" opacity=".5"/></pattern>
+          <marker id="s4bAr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M1 1 L9 5 L1 9" fill="none" stroke="#2B1C18" stroke-width="1.6" stroke-linecap="round"/></marker>
+        </defs>
+        <style>
+          .s4bH { font: 800 12px Inter, sans-serif; fill: #2B1C18; }
+          .s4bL { font: 600 12px Inter, sans-serif; fill: #2B1C18; }
+          .s4bS { font: 400 11px Inter, sans-serif; fill: #5E4A44; }
+          .s4bB { font: 800 11px Inter, sans-serif; fill: #1E4566; }
+          .s4bV { font: 800 18px Inter, sans-serif; fill: #3B1A15; }
+          .s4bA { font: 700 11px Inter, sans-serif; fill: #592A22; }
+          .s4bN { font: 400 12px Inter, sans-serif; fill: #5E4A44; }
+        </style>
+
+        <text class="s4bH" x="30" y="26">HOW R5 CHOOSES A SETTING WITHOUT SEEING THE TEST ROWS</text>
+
+        <g filter="url(#s4bSk)" fill="none" stroke="#2B1C18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="23" y="50" width="150" height="70" rx="10" transform="rotate(-0.8 98 85)" fill="#F8EEEB"/>
+          <rect x="194" y="50" width="150" height="70" rx="10" transform="rotate(0.7 269 85)" fill="#FFFFFF"/>
+          <rect x="365" y="50" width="150" height="70" rx="10" transform="rotate(-0.5 440 85)" fill="#FFFFFF"/>
+          <rect x="536" y="50" width="150" height="70" rx="10" transform="rotate(0.6 611 85)" fill="#FFFFFF"/>
+          <rect x="707" y="50" width="150" height="70" rx="10" transform="rotate(-0.7 782 85)" fill="#A9C8E3"/>
+          <path d="M175 85 L190 85" marker-end="url(#s4bAr)"/>
+          <path d="M346 85 L361 85" marker-end="url(#s4bAr)"/>
+          <path d="M517 85 L532 85" marker-end="url(#s4bAr)"/>
+          <path d="M688 85 L703 85" marker-end="url(#s4bAr)"/>
+          <rect x="23" y="176" width="620" height="40" rx="12" stroke-dasharray="6 5" fill="#FFFFFF"/>
+          <path d="M645 196 L782 196 L782 128" marker-end="url(#s4bAr)"/>
+        </g>
+
+        <text class="s4bH" x="98" y="76" text-anchor="middle">1 · Training</text>
+        <text class="s4bS" x="98" y="96" text-anchor="middle">2,400 rows</text>
+        <text class="s4bH" x="269" y="76" text-anchor="middle">2 · Fit 1,800</text>
+        <text class="s4bS" x="269" y="96" text-anchor="middle">check on 600</text>
+        <text class="s4bS" x="269" y="111" text-anchor="middle">(every 4th row)</text>
+        <text class="s4bH" x="440" y="76" text-anchor="middle">3 · 12 settings</text>
+        <text class="s4bS" x="440" y="96" text-anchor="middle">best 0.787, row 8</text>
+        <text class="s4bH" x="611" y="76" text-anchor="middle">4 · Refit</text>
+        <text class="s4bS" x="611" y="96" text-anchor="middle">on all 2,400</text>
+        <text class="s4bH" x="782" y="74" text-anchor="middle">5 · Score once</text>
+        <text class="s4bV" x="782" y="102" text-anchor="middle">0.790</text>
+
+        <text class="s4bA" x="440" y="146" text-anchor="middle">logistic, stemmer on, stop words kept, lr 2</text>
+        <text class="s4bL" x="40" y="201">Held-out 600: locked away until step 5, never used to choose anything</text>
+
+        <text class="s4bN" x="30" y="252">The validation number (0.787) chooses; the held-out number (0.790) is reported. They differ, as they should.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - choices are made on a slice of the training rows; the held-out rows are scored once, at the end</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>What the grid found, and what it did not<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The grid tries four naive Bayes settings (smoothing 1 or 0.3, with and without bigrams) and eight logistic settings (stop words in or out, stemmer on or off, learning rate 1 or 2). On the 600 validation rows the naive Bayes settings scored 0.735 to 0.768 and the logistic ones 0.767 to 0.787. The winner, row 8, keeps stop words, turns the light stemmer on and uses learning rate 2.</p>
+        <p>Two findings worth writing on the playbook page. <strong>Removing stop words never helped the logistic model</strong> here (0.768 to 0.777 with them out, 0.767 to 0.787 with them in): words like "my" and "i" carry a little signal in complaint text, and a learned weight can simply ignore the rest. <strong>Bigrams did not help naive Bayes</strong> either (0.748 and 0.735 against 0.768 and 0.760). Session 1's "decide the switches on the bench, not by taste" was not a formality.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Validation split, cross-validation, and a split by time<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>One validation slice of 600 rows is noisy: the gap between the top logistic settings is a handful of complaints. Five-fold cross-validation (rotate which quarter of the training rows is held back, average the five scores) is steadier and costs five times the compute, which is trivial at this size.</p>
+        <p>A random split also flatters any text model in one specific way: complaints from the same month share wording, templates and events, so random test rows look like the training rows. Ledgerly will deploy on next month's complaints, so the honest test is a split by time: train on January to September, test on October to December. The homework asks you to run it in Python; expect a lower number, and session 5's drift chart shows why. The general rules for splits are in <a href="https://phoebefu6.github.io/learn-intro-ml-with-phoebe/courses/b2-train-test-split.html">Intro to ML, session b2</a>.</p>
+      </div>
+    </details>
+
+    <div class="callout example">
+      <p><span class="ex-pill">Real world</span> <strong>Twenty experiments, one test set.</strong> A team tries twenty feature tweaks, keeps whichever scores best on the test set each time, and ships at 0.83. In production it settles at 0.79. Nothing broke: the test set had quietly become a training set for the choices. A validation split, or a fresh test set at the end, keeps the reported number honest.</p>
+    </div>
+  </section>
+
+  <section class="section" id="part-3">
+    <div class="section-kicker">
+      <span class="klabel">Part 3 · covers memorisation, the break button and the modelled LLM rung</span>
+      <h2>Two traps, a break button, and a rung we cannot score</h2>
+      <span class="tag concept">5 min live</span>
+    </div>
+    <p class="lede">A bench earns trust when it can report a worse number. Two switches in the widget make that visible: one scores the model on the complaints it trained on (the trap that makes every classifier look superb), the other shuffles the training labels (the break that must destroy the score if the bench measures anything real).</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Left panel, scored on rows it trained on: R4 logistic 0.975, R2 counts plus naive Bayes 0.890; this measures memory. Right panel, scored on 600 held-out rows: R4 0.778, R2 0.762; this measures routing. Bottom strip, the break button: R4 trained on shuffled labels scores 0.195 on held-out rows, below the majority rung at 0.300; R2 scores 0.247.">
+        <defs>
+          <filter id="s4cSk" x="-3%" y="-3%" width="106%" height="106%"><feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="47" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.4" xChannelSelector="R" yChannelSelector="G"/></filter>
+          <pattern id="s4cHc" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(-38)"><line x1="0" y1="0" x2="0" y2="7" stroke="#592A22" stroke-width="1" opacity=".5"/></pattern>
+          <marker id="s4cAr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M1 1 L9 5 L1 9" fill="none" stroke="#2B1C18" stroke-width="1.6" stroke-linecap="round"/></marker>
+        </defs>
+        <style>
+          .s4cH { font: 800 12px Inter, sans-serif; fill: #2B1C18; }
+          .s4cL { font: 600 12px Inter, sans-serif; fill: #2B1C18; }
+          .s4cS { font: 400 11px Inter, sans-serif; fill: #5E4A44; }
+          .s4cR { font: 800 12px Inter, sans-serif; fill: #991B1B; }
+          .s4cB { font: 800 11px Inter, sans-serif; fill: #1E4566; }
+          .s4cV { font: 800 20px Inter, sans-serif; fill: #3B1A15; }
+          .s4cA { font: 700 11px Inter, sans-serif; fill: #592A22; }
+          .s4cN { font: 400 12px Inter, sans-serif; fill: #5E4A44; }
+        </style>
+
+        <text class="s4cH" x="30" y="26">THE SAME TWO MODELS, SCORED THREE WAYS</text>
+
+        <g filter="url(#s4cSk)" fill="none" stroke="#2B1C18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="40" y="46" width="390" height="150" rx="12" transform="rotate(-0.4 235 121)" fill="#FEF2F2" stroke="#FCA5A5"/>
+          <rect x="450" y="46" width="390" height="150" rx="12" transform="rotate(0.4 645 121)" fill="#F8EEEB" stroke="#592A22"/>
+          <rect x="120" y="248" width="640" height="24" rx="12" fill="#EDE3E0" stroke="#D3C3BE"/>
+          <rect x="120" y="248" width="125" height="24" rx="12" fill="#A9C8E3"/>
+          <path d="M312 238 L312 282" stroke="#592A22" stroke-width="2.5"/>
+        </g>
+
+        <text class="s4cR" x="58" y="76">Trap: scored on rows it trained on</text>
+        <text class="s4cL" x="58" y="108">R4 logistic</text>
+        <text class="s4cV" x="210" y="110">0.975</text>
+        <text class="s4cL" x="58" y="142">R2 counts + NB</text>
+        <text class="s4cV" x="210" y="144">0.890</text>
+        <text class="s4cS" x="58" y="178">measures memory, not routing</text>
+
+        <text class="s4cH" x="468" y="76">Honest: scored on 600 held-out rows</text>
+        <text class="s4cL" x="468" y="108">R4 logistic</text>
+        <text class="s4cV" x="620" y="110">0.778</text>
+        <text class="s4cL" x="468" y="142">R2 counts + NB</text>
+        <text class="s4cV" x="620" y="144">0.762</text>
+        <text class="s4cS" x="468" y="178">measures routing new complaints</text>
+
+        <text class="s4cH" x="30" y="232">Break: labels shuffled</text>
+        <text class="s4cA" x="312" y="232" text-anchor="middle">majority 0.300</text>
+        <text class="s4cB" x="40" y="265">R4 0.195</text>
+        <text class="s4cS" x="330" y="265">R2 0.247 · both fall below the floor</text>
+
+        <text class="s4cN" x="30" y="312">If shuffling the labels did not destroy the score, the bench would be measuring something other than learning.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the training-rows score inflates R4 by 0.197; shuffled labels push it below the majority rung, which is exactly what an honest bench must do</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The trap: scoring on what the model has seen<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Scored on its own 2,400 training complaints, R4 reaches 0.975 and R2 0.890. The logistic model with bigrams has about as many weights as there are word pairs in the training text, and it can memorise most of the complaints it was shown. The gap between 0.975 and 0.778 is not skill; it is the size of the illusion.</p>
+        <p>Text has quieter versions of the same trap, and none of them needs a mistake in the code: the same complaint filed twice (once per company) landing in both train and test; template letters ("under 15 USC 1681 section 602...") copied by many consumers; the label leaking into the text ("this student loan complaint"). Search the training set for near-copies of your test rows before you trust a number.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The break button: a bench must be able to fail<span class="mini">1 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>"Shuffle the training labels" keeps every complaint and every queue size and randomly reassigns which complaint has which label (a fixed seed, so everyone sees the same result). The models now learn nothing true. Scored honestly on the 600 held-out complaints, R4 falls to 0.195 and R2 to 0.247, both below the 0.300 majority rung. If a bench still reported 0.7 after this, it would be leaking the answer somewhere.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The modelled rung: what a large language model would cost here<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The widget's last panel prices sending each held-out complaint, at full length, to a large language model with an instruction listing the six queues. It is <strong>modelled</strong>: no complaint is sent anywhere, there is no API key, and its accuracy is not measured on this bench. The assumptions are printed: 1.3 tokens per English word, a 120-token instruction, 4 output tokens. The 600 complaints are 115,069 words, so 221,590 input tokens. At placeholder prices of $1 per million input tokens and $5 per million output tokens that is $0.39 per 1,000 complaints. Change the prices to the vendor's current list before quoting any figure; prices move monthly.</p>
+        <p>Notice what the cheap bill does not settle. The published evidence on accuracy disagrees (Gilardi et al. 2023 found zero-shot labels beating crowd workers; Bucher and Martini 2024 found fine-tuned smaller models winning in every case they tested), and repeatability depends on pinning the model version and prompt. Session 6 weighs all of it.</p>
+      </div>
+    </details>
+
+    <div class="callout example">
+      <p><span class="ex-pill">Real world</span> <strong>The vendor demo.</strong> A vendor demonstrates a text classifier at 97% on "your data". Ask one question: were those complaints in its training or few-shot examples? If the honest answer is "some of them", you are looking at the left panel of the figure above. Ask for the score on rows it has never seen, and for its break-button result.</p>
+    </div>
+  </section>
+
+  <section class="section" id="demo-1">
+    <div class="section-kicker">
+      <span class="klabel">Build-along</span>
+      <h2>Run the bench and fill page 4 of the playbook</h2>
+      <span class="tag demo">★ 22 min · everyone builds</span>
+    </div>
+    <p class="lede">You will run every rung, read the confusion table as a routing cost, spring both traps, and write the result into Ledgerly's text playbook (Constructed Ledgerly example; the complaints are real). The figure below is R5's confusion table, so you know what to look for before you press anything.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 404" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Confusion table for R5 on 600 held-out complaints, true queue by routed queue. Credit reporting 163 correct, 10 to collection. Debt collection 73 correct, 29 to credit reporting, highlighted. Credit card 67 correct, 10 to banking. Checking or savings 75 correct. Student loan 50 correct. Vehicle loan 46 correct. Recall per queue: 0.906, 0.608, 0.744, 0.833, 0.833, 0.767.">
+        <defs>
+          <filter id="s4dSk" x="-3%" y="-3%" width="106%" height="106%"><feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="53" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.4" xChannelSelector="R" yChannelSelector="G"/></filter>
+          <pattern id="s4dHc" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(-38)"><line x1="0" y1="0" x2="0" y2="7" stroke="#592A22" stroke-width="1" opacity=".5"/></pattern>
+          <marker id="s4dAr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M1 1 L9 5 L1 9" fill="none" stroke="#2B1C18" stroke-width="1.6" stroke-linecap="round"/></marker>
+        </defs>
+        <style>
+          .s4dH { font: 800 12px Inter, sans-serif; fill: #2B1C18; }
+          .s4dL { font: 600 12px Inter, sans-serif; fill: #2B1C18; }
+          .s4dS { font: 400 11px Inter, sans-serif; fill: #5E4A44; }
+          .s4dB { font: 800 11px Inter, sans-serif; fill: #1E4566; }
+          .s4dW { font: 800 12px Inter, sans-serif; fill: #FFFFFF; }
+          .s4dK { font: 700 12px Inter, sans-serif; fill: #2B1C18; }
+          .s4dA { font: 700 11px Inter, sans-serif; fill: #592A22; }
+          .s4dN { font: 400 12px Inter, sans-serif; fill: #5E4A44; }
+        </style>
+
+        <text class="s4dH" x="30" y="26">R5 ON 600 HELD-OUT COMPLAINTS: WHERE EACH QUEUE'S COMPLAINTS WENT</text>
+        <text class="s4dA" x="488" y="46" text-anchor="middle">routed to</text>
+        <text class="s4dA" x="190" y="62" text-anchor="end">true queue</text>
+        <text class="s4dA" x="796" y="62">recall</text>
+
+        <text class="s4dS" x="248" y="62" text-anchor="middle">report</text>
+        <text class="s4dS" x="344" y="62" text-anchor="middle">collect</text>
+        <text class="s4dS" x="440" y="62" text-anchor="middle">card</text>
+        <text class="s4dS" x="536" y="62" text-anchor="middle">bank</text>
+        <text class="s4dS" x="632" y="62" text-anchor="middle">student</text>
+        <text class="s4dS" x="728" y="62" text-anchor="middle">auto</text>
+
+        <g filter="url(#s4dSk)" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round">
+          <rect x="200" y="70" width="96" height="44" fill="#592A22"/><rect x="296" y="70" width="96" height="44" fill="#8A4A3C"/><rect x="392" y="70" width="96" height="44" fill="#DDB8AD"/><rect x="488" y="70" width="96" height="44" fill="#F8EEEB"/><rect x="584" y="70" width="96" height="44" fill="#F8EEEB"/><rect x="680" y="70" width="96" height="44" fill="#F8EEEB"/>
+          <rect x="200" y="114" width="96" height="44" fill="#A9C8E3"/><rect x="296" y="114" width="96" height="44" fill="#592A22"/><rect x="392" y="114" width="96" height="44" fill="#DDB8AD"/><rect x="488" y="114" width="96" height="44" fill="#DDB8AD"/><rect x="584" y="114" width="96" height="44" fill="#F8EEEB"/><rect x="680" y="114" width="96" height="44" fill="#DDB8AD"/>
+          <rect x="200" y="158" width="96" height="44" fill="#DDB8AD"/><rect x="296" y="158" width="96" height="44" fill="#DDB8AD"/><rect x="392" y="158" width="96" height="44" fill="#592A22"/><rect x="488" y="158" width="96" height="44" fill="#8A4A3C"/><rect x="584" y="158" width="96" height="44" fill="#F8EEEB"/><rect x="680" y="158" width="96" height="44" fill="#F8EEEB"/>
+          <rect x="200" y="202" width="96" height="44" fill="#F8EEEB"/><rect x="296" y="202" width="96" height="44" fill="#DDB8AD"/><rect x="392" y="202" width="96" height="44" fill="#DDB8AD"/><rect x="488" y="202" width="96" height="44" fill="#592A22"/><rect x="584" y="202" width="96" height="44" fill="#F8EEEB"/><rect x="680" y="202" width="96" height="44" fill="#F8EEEB"/>
+          <rect x="200" y="246" width="96" height="44" fill="#DDB8AD"/><rect x="296" y="246" width="96" height="44" fill="#DDB8AD"/><rect x="392" y="246" width="96" height="44" fill="#F8EEEB"/><rect x="488" y="246" width="96" height="44" fill="#F8EEEB"/><rect x="584" y="246" width="96" height="44" fill="#592A22"/><rect x="680" y="246" width="96" height="44" fill="#F8EEEB"/>
+          <rect x="200" y="290" width="96" height="44" fill="#DDB8AD"/><rect x="296" y="290" width="96" height="44" fill="#F8EEEB"/><rect x="392" y="290" width="96" height="44" fill="#F8EEEB"/><rect x="488" y="290" width="96" height="44" fill="#DDB8AD"/><rect x="584" y="290" width="96" height="44" fill="#F8EEEB"/><rect x="680" y="290" width="96" height="44" fill="#592A22"/>
+        </g>
+
+        <text class="s4dL" x="190" y="96" text-anchor="end">Credit reporting</text>
+        <text class="s4dL" x="190" y="140" text-anchor="end">Debt collection</text>
+        <text class="s4dL" x="190" y="184" text-anchor="end">Credit card</text>
+        <text class="s4dL" x="190" y="228" text-anchor="end">Checking or savings</text>
+        <text class="s4dL" x="190" y="272" text-anchor="end">Student loan</text>
+        <text class="s4dL" x="190" y="316" text-anchor="end">Vehicle loan</text>
+
+        <text class="s4dW" x="248" y="96" text-anchor="middle">163</text><text class="s4dW" x="344" y="96" text-anchor="middle">10</text><text class="s4dK" x="440" y="96" text-anchor="middle">4</text><text class="s4dK" x="536" y="96" text-anchor="middle">1</text><text class="s4dK" x="632" y="96" text-anchor="middle">2</text><text class="s4dK" x="728" y="96" text-anchor="middle">0</text>
+        <text class="s4dK" x="248" y="140" text-anchor="middle">29</text><text class="s4dW" x="344" y="140" text-anchor="middle">73</text><text class="s4dK" x="440" y="140" text-anchor="middle">8</text><text class="s4dK" x="536" y="140" text-anchor="middle">5</text><text class="s4dK" x="632" y="140" text-anchor="middle">2</text><text class="s4dK" x="728" y="140" text-anchor="middle">3</text>
+        <text class="s4dK" x="248" y="184" text-anchor="middle">9</text><text class="s4dK" x="344" y="184" text-anchor="middle">4</text><text class="s4dW" x="440" y="184" text-anchor="middle">67</text><text class="s4dW" x="536" y="184" text-anchor="middle">10</text><text class="s4dK" x="632" y="184" text-anchor="middle">0</text><text class="s4dK" x="728" y="184" text-anchor="middle">0</text>
+        <text class="s4dK" x="248" y="228" text-anchor="middle">1</text><text class="s4dK" x="344" y="228" text-anchor="middle">4</text><text class="s4dK" x="440" y="228" text-anchor="middle">7</text><text class="s4dW" x="536" y="228" text-anchor="middle">75</text><text class="s4dK" x="632" y="228" text-anchor="middle">1</text><text class="s4dK" x="728" y="228" text-anchor="middle">2</text>
+        <text class="s4dK" x="248" y="272" text-anchor="middle">4</text><text class="s4dK" x="344" y="272" text-anchor="middle">3</text><text class="s4dK" x="440" y="272" text-anchor="middle">0</text><text class="s4dK" x="536" y="272" text-anchor="middle">2</text><text class="s4dW" x="632" y="272" text-anchor="middle">50</text><text class="s4dK" x="728" y="272" text-anchor="middle">1</text>
+        <text class="s4dK" x="248" y="316" text-anchor="middle">5</text><text class="s4dK" x="344" y="316" text-anchor="middle">2</text><text class="s4dK" x="440" y="316" text-anchor="middle">1</text><text class="s4dK" x="536" y="316" text-anchor="middle">4</text><text class="s4dK" x="632" y="316" text-anchor="middle">2</text><text class="s4dW" x="728" y="316" text-anchor="middle">46</text>
+
+        <text class="s4dL" x="796" y="96">0.906</text>
+        <text class="s4dB" x="796" y="140">0.608</text>
+        <text class="s4dL" x="796" y="184">0.744</text>
+        <text class="s4dL" x="796" y="228">0.833</text>
+        <text class="s4dL" x="796" y="272">0.833</text>
+        <text class="s4dL" x="796" y="316">0.767</text>
+
+        <rect x="30" y="350" width="16" height="12" fill="#592A22"/><text class="s4dS" x="52" y="360">40 or more</text>
+        <rect x="140" y="350" width="16" height="12" fill="#8A4A3C"/><text class="s4dS" x="162" y="360">10 to 39</text>
+        <rect x="240" y="350" width="16" height="12" fill="#DDB8AD"/><text class="s4dS" x="262" y="360">3 to 9</text>
+        <rect x="330" y="350" width="16" height="12" fill="#F8EEEB" stroke="#D3C3BE"/><text class="s4dS" x="352" y="360">0 to 2</text>
+        <rect x="420" y="350" width="16" height="12" fill="#A9C8E3"/><text class="s4dB" x="442" y="360">the costliest misroute: 29</text>
+
+        <text class="s4dN" x="30" y="390">29 of 120 debt collection complaints go to credit reporting: collectors report debts, so the words overlap.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - read the table by row: debt collection loses 29 complaints to credit reporting, the single costliest misroute for Ledgerly</figcaption>
+    </figure>
+
+    <div class="steps">
+      <div class="step">
+        <p><strong>Run the floor and the rules.</strong> In the bench below, press R0, then R1. Write down both numbers for each: R0 0.300 and macro F1 0.077; R1 0.610 and 0.615. In R1's queue table, find the queue with high recall and low precision (credit reporting, 0.922 and 0.466) and say in one sentence why.</p>
+        <div class="prompt-box good"><span class="label">★ Step 1 · what to read on every rung</span>accuracy (correct of 600) · macro F1 · misroutes per 1,000
+the queue with the lowest recall, and where its complaints went</div>
+        <div class="ntx-mount" data-ntx="bench" data-start="r0"></div>
+      </div>
+
+      <div class="step">
+        <p><strong>Watch the drop.</strong> Press R2 (0.762), then R3 (0.608). Open R3's confusion table and read the first column: credit reporting absorbs complaints from every other queue, and vehicle-loan recall falls to 0.283. Then press R4 (0.778) and R5 (0.790). R5 takes a few seconds: it trains thirteen models. Open its validation grid and find row 8.</p>
+        <div class="prompt-box good"><span class="label">★ Step 2 · the ladder, as printed</span>R0 0.300 (F1 0.077) · R1 0.610 (0.615) · R2 0.762 (0.760)
+R3 0.608 (0.569) · R4 0.778 (0.779) · R5 0.790 (0.791)</div>
+      </div>
+
+      <div class="step">
+        <p><strong>Spring the trap, then press the break button.</strong> With R4 selected, switch on "Trap: score on the training rows": 0.975, and a red warning. Switch it off and switch on "Break: shuffle the training labels": 0.195. Do the same on R2: 0.890 and 0.247. Turn both off before you move on.</p>
+        <div class="prompt-box good"><span class="label">★ Step 3 · trap and break rows</span>R4: honest 0.778 · scored on training rows 0.975 · shuffled labels 0.195
+R2: honest 0.762 · scored on training rows 0.890 · shuffled labels 0.247</div>
+      </div>
+
+      <div class="step">
+        <p><strong>Reproduce R4 in scikit-learn.</strong> The bench writes its own small logistic regression so the browser and a plain-Python reference agree to the last digit. scikit-learn uses a different solver and its own tokeniser defaults, so expect a number close to 0.778, not identical; your numbers will differ slightly. The shape of the ladder is what should match.</p>
+        <div class="prompt-box good"><span class="label">★ Step 4 · Python, run locally (scikit-learn)</span>from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report
+
+# texts_train, y_train, texts_test, y_test: the same 2,400 / 600 split, one string per complaint
+vec = TfidfVectorizer(token_pattern=r"[a-z]+", ngram_range=(1, 2), min_df=2)
+X_train = vec.fit_transform(texts_train)     # vocabulary and idf from training rows only
+X_test = vec.transform(texts_test)
+clf = LogisticRegression(max_iter=2000).fit(X_train, y_train)
+print(classification_report(y_test, clf.predict(X_test), digits=3))</div>
+      </div>
+
+      <div class="step">
+        <p><strong>Price the alternative and write page 4.</strong> In the modelled panel, type the current prices from a vendor you would actually use. Then paste the block below into Ledgerly's playbook and fill the blanks from your screen.</p>
+        <div class="prompt-box good"><span class="label">★ Step 5 · Ledgerly text playbook, page 4: bench result (Constructed Ledgerly example)</span>Holdout: 600 real CFPB complaints (2023), stratified, never used for a choice.
+Ladder (accuracy / macro F1): R0 0.300/0.077  R1 0.610/0.615  R2 0.762/0.760
+  R3 0.608/0.569  R4 0.778/0.779  R5 0.790/0.791 (validation chose: logistic,
+  stemmer on, stop words kept, lr 2; validation 0.787)
+Traps: R4 on training rows 0.975 (memory). Shuffled labels 0.195 (bench can fail).
+Costliest misroute: debt collection to credit reporting, 29 of 120.
+LLM alternative (MODELLED, not measured): ______ per 1,000 complaints at
+  $____ / $____ per million tokens (prices checked on ________).
+Open question for session 6: is 0.790 good enough, and for which queues?</div>
+      </div>
+    </div>
+
+    <div class="callout tip">
+      <p><strong>Put the trap rows on the page, every time.</strong> A bench page that shows only the honest number invites the question "did you test on training data?". A page that shows 0.975 labelled "training rows, not a result" beside the honest 0.778, and a shuffled-label 0.195 underneath, answers it before anyone asks.</p>
+    </div>
+  </section>
+
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Before session 5</h2>
+      <span class="tag exercise">40 min</span>
+    </div>
+    <ol>
+      <li><strong>Split by time.</strong> In Python, train R4's recipe on January to September 2023 complaints and test on October to December. Compare with the random split's 0.778 and write one sentence on why they differ.</li>
+      <li><strong>Hunt for near-duplicates.</strong> For each of 50 held-out complaints, find its most similar training complaint by cosine similarity on TF-IDF. How many pairs are near-copies (similarity above 0.8)? What would removing them do to the score?</li>
+      <li><strong>Cost one misroute.</strong> Ask (or estimate, labelled as an estimate) how many minutes a wrongly routed complaint costs your team. Multiply by 210 misroutes per 1,000. That number belongs next to accuracy on page 4.</li>
+      <li><strong>Price the modelled rung honestly.</strong> Find one vendor's current published price per million tokens, enter it, and record the date you checked.</li>
+    </ol>
+  </section>
+
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions</h2>
+    </div>
+    <p>Clear all three and session 4 gets stamped in your passport.</p>
+
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">1 · TF-IDF + naive Bayes (0.608) scores below counts + naive Bayes (0.762). What is the best reading?</p>
+      <button class="qopt" type="button">A · TF-IDF is a bad weighting and should never be used</button>
+      <button class="qopt" type="button">B · The weighting suits comparing documents, but shrinks naive Bayes' word evidence so the class prior dominates; a weighting is good or bad for a model, not in general</button>
+      <button class="qopt" type="button">C · The bench has a bug, because every step up the ladder must improve</button>
+      <button class="qopt" type="button">D · Naive Bayes cannot classify text</button>
+      <p class="qwhy">R3 gets 175 of 180 credit reporting complaints and only 0.283 of vehicle loans: the prior is winning. The same TF-IDF features feed R4, the logistic model, which reaches 0.778.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="3">
+      <p class="qtext">2 · Why does R5 choose its setting on a validation slice of the training rows instead of the 600 held-out rows?</p>
+      <button class="qopt" type="button">A · Because the validation slice is bigger</button>
+      <button class="qopt" type="button">B · Because validation numbers are always higher</button>
+      <button class="qopt" type="button">C · To make training faster</button>
+      <button class="qopt" type="button">D · So the held-out number stays an unbiased estimate: choosing on it would make it partly a selection effect</button>
+      <p class="qwhy">Each choice made by looking at the test rows leaks a little of them into the model. The validation number (0.787) chooses; the held-out number (0.790) is reported once.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">3 · With shuffled training labels, R4 scores 0.195 on the held-out rows. What does that prove?</p>
+      <button class="qopt" type="button">A · The bench can report a worse number, so its good numbers come from learning the real labels and not from a leak</button>
+      <button class="qopt" type="button">B · Logistic regression is unreliable</button>
+      <button class="qopt" type="button">C · The labels in the CFPB data are wrong</button>
+      <button class="qopt" type="button">D · Shuffling improves robustness</button>
+      <p class="qwhy">A break button is a test of the measuring instrument. Below the 0.300 majority floor is exactly where a model with no true signal should land.</p>
+    </div>
+
+    <p class="quiz-score"></p>
+  </section>
+
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Sources covered</span>
+      <h2>What this session teaches, and where it came from</h2>
+    </div>
+    <div class="covered">
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Naive Bayes for text</span><span class="note">Jurafsky and Martin, 2024 draft, ch 4 (bag of words, conditional independence, add-one smoothing Eq 4.14); read at source</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Logistic regression for text</span><span class="note">Jurafsky and Martin, 2026 draft, ch 4 "Logistic Regression and Text Classification"; read at source</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Defaults used on the bench</span><span class="note">scikit-learn MultinomialNB alpha default 1.0; TfidfTransformer smooth idf and l2 norm; read at source</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">Splits and metrics</span><span class="note">Applied to text only; the general method lives in Intro to ML b2 and b7</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">Zero-shot LLM labelling</span><span class="note">Gilardi et al. 2023 (PNAS) and Bucher and Martini 2024 (arXiv) abstracts read at source; the bench prices this rung and does not score it</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Every number on this page</span><span class="note">Printed by the bench on 600 held-out real complaints; a plain-Python reference run gives the same values</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Ledgerly</span><span class="note">Constructed example; the complaints are real, the team is fictional</span></div>
+    </div>
+    <p class="mono" style="margin-top:14px">Every fact on this page, and its verification tier, is recorded in the course's source map.</p>
+  </section>
+
+  <section class="cheat" id="cheatsheet">
+    <h3>Session 4 cheat sheet <span>· pin this</span></h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>Two numbers per rung</b><span>Accuracy and macro F1, side by side. The majority rung scores 0.300 and 0.077.</span></div>
+      <div class="cheat-item"><b>The ladder is not monotone</b><span>TF-IDF helps logistic regression and hurts naive Bayes (0.762 to 0.608).</span></div>
+      <div class="cheat-item"><b>Choose on validation</b><span>Score the held-out rows once. Validation 0.787 chose; held-out 0.790 is reported.</span></div>
+      <div class="cheat-item"><b>Trap</b><span>Scored on training rows: 0.975. That measures memory. Never put it on a slide.</span></div>
+      <div class="cheat-item"><b>Break button</b><span>Shuffle the labels; the score must collapse (0.195). If it does not, find the leak.</span></div>
+      <div class="cheat-item"><b>Modelled is not measured</b><span>Price the LLM rung with stated assumptions and dated prices; score it on your own labelled rows.</span></div>
+    </div>
+  </section>
+
+  <div class="callout next">
+    <span class="nx-pill">Next session</span>
+    <p>Routing answers "which queue?". Session 5 answers "what are people complaining about, and is it changing?": BM25 and cosine search over all 3,000 complaints, k-means themes that move when you change the seed, and one theme that more than quadruples between June and October 2023.</p>
+  </div>
+
+  <footer class="pagefoot">
+    <span>Session 4 of 6 · learn-nlp-text-analytics-with-phoebe · by Phoebe Fu &nbsp;·&nbsp; 📚 <a href="https://phoebefu6.github.io/learn-with-phoebe/">Learn with Phoebe ↗</a></span>
+    <span><a href="03-route-it.html">← Prev: Route it: a classifier you can read</a> &nbsp;·&nbsp; <a href="05-search-and-themes.html">Next: Search and themes →</a></span>
+  </footer>
+
+</main>
+
+<script src="../assets/ntx-sample.js?v=2"></script>
+<script src="../assets/ntx-live.js?v=2"></script>
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

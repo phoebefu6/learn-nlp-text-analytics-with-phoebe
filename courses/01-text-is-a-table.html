@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- social:start -->
+<meta name="description" content="Session 1 of 6. Documents, tokens and a vocabulary: turn 3,000 real CFPB complaint narratives into a table, see what every normalisation choice throws away, and watch Zipf's law appear in the counts.">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Learn with Phoebe">
+<meta property="og:title" content="Text is a table you have not built yet - learn NLP and text analytics with phoebe">
+<meta property="og:description" content="Session 1 of 6. Tokens, vocabulary, normalisation and Zipf's law on real complaint text, computed in your browser.">
+<meta property="og:url" content="https://phoebefu6.github.io/learn-nlp-text-analytics-with-phoebe/courses/01-text-is-a-table.html">
+<meta property="og:image" content="https://phoebefu6.github.io/learn-nlp-text-analytics-with-phoebe/assets/og-cover.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Text is a table you have not built yet - learn NLP and text analytics with phoebe">
+<meta name="twitter:description" content="Session 1 of 6. Tokens, vocabulary, normalisation and Zipf's law on real complaint text.">
+<meta name="twitter:image" content="https://phoebefu6.github.io/learn-nlp-text-analytics-with-phoebe/assets/og-cover.png">
+<!-- social:end -->
+<title>Session 1 · Text is a table you have not built yet - learn NLP and text analytics with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=2">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-nlp-text-analytics-with-phoebe</a> / Session 1 of 6</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn NLP &amp; Text Analytics with Phoebe · Session 1 of 6</div>
+    <h1>Text is a table <span class="accent">you have not built yet</span></h1>
+    <p class="sub">Somebody hands you thirty thousand complaints and says "just put them through an LLM". Before any model, text has to become rows and columns, and every step of that conversion is a decision that throws something away. Tonight we build the table from 3,000 real consumer complaints, decide what to keep, and meet the law that governs every word count you will ever make.</p>
+    <div class="chip-row">
+      <span class="chip level">🟢 Foundations</span>
+      <span class="chip audience">Analysts and data scientists handed a pile of free text</span>
+      <span class="chip audience">Light Python, everything also runs in the page</span>
+      <span class="chip time">45 min</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Welcome</span>
+      <span class="a2" style="flex:4">3-18 · Tokens, normalising, Zipf</span>
+      <span class="a3" style="flex:5">18-40 · Build-along: the corpus card</span>
+      <span class="a4" style="flex:1">40-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>Where we start</h2>
+    </div>
+    <p class="lede">One question runs through all six sessions: what can be counted, classified and searched cheaply, auditably and reproducibly, and where does a large language model actually earn its cost? We answer it on real text. The complaints are 3,000 narratives that US consumers sent to the Consumer Financial Protection Bureau (CFPB) in 2023 and agreed to publish. The team reading them is fictional: the Constructed Ledgerly example, a consumer-lending fintech whose complaints team must route every complaint to one of six product queues and spot rising issues before they become a regulator's question. Each session adds one page to Ledgerly's text playbook.</p>
+
+    <div class="legend">
+      <span class="pill">🎫 Clear all three quiz questions to stamp your passport</span>
+      <span class="pill">Live = presented in the 45 minutes</span>
+      <span class="pill">Self-study = the full depth, after class</span>
+      <span class="pill">★ Build-along = do it yourself, in the page</span>
+    </div>
+
+    <div class="callout win">
+      <p><strong>★ What you walk out with tonight.</strong> Ledgerly's corpus card: where the 3,000 complaints came from, which snapshot, what was cut and why, and the numbers that describe the pile (documents, tokens, vocabulary, the share that is redaction marks). Plus a written list of your normalisation choices and what each one costs, so the next person can rebuild exactly the same table.</p>
+    </div>
+  </section>
+
+  <section class="section" id="part-1">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers documents, tokens and the bag of words</span>
+      <h2>From a complaint to a row</h2>
+      <span class="tag concept">5 min live</span>
+    </div>
+    <p class="lede">A model cannot read a sentence. It can read a row of numbers. Text analytics starts by deciding what one row is (a document), what the columns are (the vocabulary) and what goes in each cell (a count, for now). Follow one real complaint through the three steps and notice the moment the word order disappears.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 266" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Three boxes for real CFPB complaint 6400037. Box 1, the narrative: the unverified items indicated below continue reporting on my credit report, and so on. Box 2, the tokens in order: the, unverified, items, indicated, below, continue, reporting, on, my, credit, report; 50 tokens kept. Box 3, one row of the table: credit 2, report 1, reporting 1, xxxx 3, plus 5,246 more columns, mostly zero. The row is highlighted. Note: after step 3 the order is gone; the row keeps counts, not sentences.">
+        <defs>
+          <filter id="s1aSk" x="-3%" y="-3%" width="106%" height="106%"><feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="11" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.4" xChannelSelector="R" yChannelSelector="G"/></filter>
+          <pattern id="s1aHc" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(-38)"><line x1="0" y1="0" x2="0" y2="7" stroke="#592A22" stroke-width="1" opacity=".5"/></pattern>
+          <marker id="s1aAr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M1 1 L9 5 L1 9" fill="none" stroke="#2B1C18" stroke-width="1.6" stroke-linecap="round"/></marker>
+        </defs>
+        <style>
+          .s1aH { font: 800 12px Inter, sans-serif; fill: #2B1C18; }
+          .s1aL { font: 600 12px Inter, sans-serif; fill: #2B1C18; }
+          .s1aS { font: 400 11px Inter, sans-serif; fill: #5E4A44; }
+          .s1aB { font: 800 11px Inter, sans-serif; fill: #1E4566; }
+          .s1aV { font: 800 18px Inter, sans-serif; fill: #3B1A15; }
+          .s1aA { font: 700 11px Inter, sans-serif; fill: #592A22; }
+          .s1aN { font: 400 12px Inter, sans-serif; fill: #5E4A44; }
+        </style>
+
+        <text class="s1aH" x="30" y="26">FROM ONE COMPLAINT TO ONE ROW</text>
+        <text class="s1aS" x="270" y="26">real CFPB complaint 6400037, credit reporting queue</text>
+
+        <g filter="url(#s1aSk)" fill="none" stroke="#2B1C18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="24" y="48" width="262" height="150" rx="10" transform="rotate(-0.6 155 123)" fill="#FFFFFF"/>
+          <rect x="322" y="48" width="236" height="150" rx="10" transform="rotate(0.5 440 123)" fill="#F8EEEB"/>
+          <rect x="594" y="48" width="262" height="150" rx="10" transform="rotate(-0.4 725 123)" fill="#A9C8E3"/>
+          <path d="M290 123 L316 123" marker-end="url(#s1aAr)"/>
+          <path d="M562 123 L588 123" marker-end="url(#s1aAr)"/>
+          <path d="M612 108 L840 108" stroke-width="1.5"/>
+        </g>
+
+        <text class="s1aH" x="40" y="74">1 · The narrative</text>
+        <text class="s1aS" x="40" y="98">the unverified items indicated below</text>
+        <text class="s1aS" x="40" y="116">continue reporting on my credit</text>
+        <text class="s1aS" x="40" y="134">report despite several written</text>
+        <text class="s1aS" x="40" y="152">requests ... to the credit bureaus</text>
+        <text class="s1aS" x="40" y="170">on xxxx xxxx xxxx but i never ...</text>
+
+        <text class="s1aH" x="338" y="74">2 · Tokens, in order</text>
+        <text class="s1aL" x="338" y="98">the · unverified · items</text>
+        <text class="s1aL" x="338" y="118">indicated · below</text>
+        <text class="s1aL" x="338" y="138">continue · reporting · on</text>
+        <text class="s1aL" x="338" y="158">my · credit · report ...</text>
+        <text class="s1aA" x="338" y="184">50 tokens kept, the rest cut</text>
+
+        <text class="s1aH" x="610" y="74">3 · One row of the table</text>
+        <text class="s1aL" x="636" y="100" text-anchor="middle">credit</text>
+        <text class="s1aL" x="694" y="100" text-anchor="middle">report</text>
+        <text class="s1aL" x="764" y="100" text-anchor="middle">reporting</text>
+        <text class="s1aL" x="826" y="100" text-anchor="middle">xxxx</text>
+        <text class="s1aV" x="636" y="136" text-anchor="middle">2</text>
+        <text class="s1aV" x="694" y="136" text-anchor="middle">1</text>
+        <text class="s1aV" x="764" y="136" text-anchor="middle">1</text>
+        <text class="s1aV" x="826" y="136" text-anchor="middle">3</text>
+        <text class="s1aL" x="610" y="176">+ 5,246 more columns, mostly 0</text>
+
+        <text class="s1aB" x="725" y="218" text-anchor="middle">5,250 columns · over 99% zeros</text>
+        <text class="s1aN" x="30" y="246">After step 3 the order is gone: the row keeps counts, not sentences. That is the bag of words.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - a document becomes a row of counts over the whole vocabulary, and almost every cell in that row is zero</figcaption>
+    </figure>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>Document, token, vocabulary: three words you will use all night<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p><strong>A document</strong> is whatever one row stands for. For Ledgerly it is one complaint narrative. It could have been one sentence, one email thread or one customer's whole history; the choice decides what every later number means, so write it down.</p>
+        <p><strong>A token</strong> is one unit the text is cut into. Here a token is a run of letters: the export lowercased everything, removed apostrophes ("I've" became "ive"), and dropped numbers, money amounts and punctuation. Those are already three decisions, made before you touched the data.</p>
+        <p><strong>The vocabulary</strong> is the set of distinct tokens across all documents. In Ledgerly's 3,000 complaints it is 5,250 words, so the table has 5,250 columns. Each complaint keeps at most 50 tokens, which means at most 50 non-zero cells: more than 99% of every row is zero. That is why text tables are stored as sparse matrices, which keep only the non-zero cells.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>The bag of words, and what order costs you<span class="mini">4 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Jurafsky and Martin describe the move exactly: represent a text document "as if it were a bag of words", an unordered set that keeps each word's count and nothing about its position (Speech and Language Processing, 2024 draft, chapter 4, section 4.1). "My card was not charged" and "not my card, I was charged" become nearly the same row.</p>
+        <p>That sounds fatal and mostly is not. For routing a complaint to a product queue, the words "repossessed", "dealer" and "vehicle" carry the signal whatever order they arrive in. Order matters far more for questions like "was the consumer satisfied?", where negation flips the meaning. Session 2 buys a little order back with two-word tokens (bigrams); session 6 asks when you need a model that reads order properly.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Reading model output is a different job<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>If your role is to read a vendor's sentiment or topic dashboard rather than build one, the consumer's side of that skill (what to ask, what a score can and cannot mean) lives in <a href="https://phoebefu6.github.io/learn-data-literacy-with-phoebe/courses/07-ml-basics-segment.html">Data Literacy, session 7</a>. These six sessions take the builder's side: you will make the table, the model and the checks yourself.</p>
+      </div>
+    </details>
+
+    <div class="callout example">
+      <p><span class="ex-pill">Real world</span> <strong>The text column that disappeared.</strong> The CFPB's Consumer Complaint Database held 19,251,022 complaints on 19 November 2026, under a CC0 public-domain dedication. Its current field list has 15 fields, and "Consumer complaint narrative" is not one of them: the live export, the API and the bulk CSV carry no narratives. The 3,000 narratives here come from a February 2024 snapshot of the same public data. If your analysis depends on text you do not own, record the snapshot date on day one; the source can change under you.</p>
+    </div>
+  </section>
+
+  <section class="section" id="part-2">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers case, stop words, stemming and redaction marks</span>
+      <h2>Every normalisation throws something away</h2>
+      <span class="tag concept">6 min live</span>
+    </div>
+    <p class="lede">Normalising means making different spellings count as the same column. It shrinks the table and concentrates the signal, and every filter also deletes something that was true about the text. Watch three filters run over the whole corpus, then switch them on yourself.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 330" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Bars for tokens kept across all 3,000 complaints as filters are added. Raw: 141,198 tokens, 5,250 distinct words. Redaction marks xxxx removed: 129,737 tokens, 5,249 words; it threw away 11,461 marks. Stop words also removed: 64,852 tokens, 5,130 words; it threw away 126 common words such as the, i, to, my. Light stemmer also applied: 64,852 tokens, 4,050 words; it merged report and reporting, and broke wells into well. Stop words are almost half of all tokens.">
+        <defs>
+          <filter id="s1bSk" x="-3%" y="-3%" width="106%" height="106%"><feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="17" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.4" xChannelSelector="R" yChannelSelector="G"/></filter>
+          <pattern id="s1bHc" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(-38)"><line x1="0" y1="0" x2="0" y2="7" stroke="#592A22" stroke-width="1" opacity=".5"/></pattern>
+          <marker id="s1bAr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M1 1 L9 5 L1 9" fill="none" stroke="#2B1C18" stroke-width="1.6" stroke-linecap="round"/></marker>
+        </defs>
+        <style>
+          .s1bH { font: 800 12px Inter, sans-serif; fill: #2B1C18; }
+          .s1bL { font: 600 12px Inter, sans-serif; fill: #2B1C18; }
+          .s1bS { font: 400 11px Inter, sans-serif; fill: #5E4A44; }
+          .s1bB { font: 800 11px Inter, sans-serif; fill: #1E4566; }
+          .s1bA { font: 700 11px Inter, sans-serif; fill: #592A22; }
+          .s1bN { font: 400 12px Inter, sans-serif; fill: #5E4A44; }
+        </style>
+
+        <text class="s1bH" x="30" y="26">WHAT EACH FILTER KEEPS, ACROSS ALL 3,000 COMPLAINTS</text>
+        <text class="s1bA" x="250" y="52">tokens kept (bar) and distinct words</text>
+        <text class="s1bA" x="690" y="52">what it threw away</text>
+
+        <g filter="url(#s1bSk)" fill="none" stroke="#2B1C18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="250" y="66" width="300" height="30" rx="6" fill="url(#s1bHc)"/>
+          <rect x="250" y="118" width="276" height="30" rx="6" fill="url(#s1bHc)"/>
+          <rect x="250" y="170" width="138" height="30" rx="6" fill="#F8EEEB"/>
+          <rect x="250" y="222" width="138" height="30" rx="6" fill="#A9C8E3"/>
+        </g>
+
+        <text class="s1bL" x="236" y="86" text-anchor="end">Raw tokens</text>
+        <text class="s1bL" x="236" y="138" text-anchor="end">xxxx marks out</text>
+        <text class="s1bL" x="236" y="190" text-anchor="end">+ stop words out</text>
+        <text class="s1bL" x="236" y="242" text-anchor="end">+ light stemmer</text>
+
+        <text class="s1bS" x="398" y="190">64,852 · 5,130 words</text>
+        <text class="s1bS" x="398" y="242">64,852 · 4,050 words</text>
+        <text class="s1bS" x="560" y="86">141,198 · 5,250</text>
+        <text class="s1bS" x="536" y="138">129,737 · 5,249</text>
+
+        <text class="s1bS" x="690" y="86">nothing yet</text>
+        <text class="s1bS" x="690" y="138">11,461 redaction marks</text>
+        <text class="s1bS" x="690" y="190">126 words: the, i, to ...</text>
+        <text class="s1bB" x="690" y="236">merges report, reporting</text>
+        <text class="s1bB" x="690" y="252">breaks wells into well</text>
+
+        <text class="s1bN" x="30" y="290">Stop words are almost half of all tokens. The stemmer removes no tokens; it merges 1,080 columns,</text>
+        <text class="s1bN" x="30" y="308">some of them wrongly. Counts computed in the page from the shipped sample.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - stop words cut the most tokens, the stemmer cuts the most columns, and both delete something true</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Stop words: half the tokens, almost none of the meaning (usually)<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>A stop list is a fixed set of very common words dropped before counting. The bench uses a 126-word English list. Removing it deletes 64,885 of 141,198 tokens across the corpus, 46% of everything, and only 119 of the 5,250 columns: the most frequent words are few and enormous.</p>
+        <p>"Usually" matters. The scikit-learn documentation warns that "there are several known issues in our provided 'english' stop word list", and that popular stop lists "may include words that are highly informative to some tasks". For complaints, "not" and "no" are on most lists and carry the whole meaning of "I did not authorise this". Session 4 tests stop-word removal on the routing task: for the logistic model it never helped.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Stemming: merging the right words and the wrong ones<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>A stemmer cuts suffixes so that "report", "reports", "reported" and "reporting" land in one column. The bench uses a deliberately light suffix stripper, not the Porter algorithm (Porter 1980, Program 14(3): 130-137), so you can see every cut it makes. It takes the vocabulary from 5,250 to 4,159 words.</p>
+        <p>On this corpus it also makes three kinds of mistake you can spot in the widget below: it turns "dated" into "dat" and "received" into "receiv" (harmless, the columns are still consistent); it splits a family ("charged" becomes "charg", "charge" stays "charge"); and it damages names ("Wells", as in Wells Fargo, becomes "well"). Session 5's themes will show that last one surfacing as a theme label.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Redaction marks are the most frequent word<span class="mini">1 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>CFPB scrubs personal details before publishing and replaces them with runs of X: names, account numbers and dates become XXXX and XX/XX/XXXX. The export turns every run into one token, <code>xxxx</code>. It is the single most frequent token in the corpus (11,461 times, 8.1% of all tokens), ahead of "i" and "the". It tells you nothing about the product queue and a lot about how the text was prepared. Keep it, drop it, or count it as a feature in its own right, but decide.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Case folding, and what lowercase hides<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The export lowercased every narrative, so "US" (the country), "us" (the pronoun) and "U.S." (cut into "u" and "s") collide, and "Apple Card" the product becomes two ordinary words. Lowercasing is right far more often than it is wrong for routing, and it is still a decision. If a later task needs names (which bank, which card), keep a cased copy of the text next to the table rather than trying to recover case afterwards.</p>
+      </div>
+    </details>
+
+    <div class="ntx-mount" data-ntx="normalise"></div>
+
+    <div class="callout example">
+      <p><span class="ex-pill">Real world</span> <strong>A filter that deletes the signal.</strong> A team classifying "is this a fraud complaint?" switches on a standard stop list and accuracy drops: "not" and "never" were doing the work in "I did not make this purchase" and "I never received the card". The fix is not a cleverer model; it is a shorter stop list, written for the task and stored with the corpus card.</p>
+    </div>
+  </section>
+
+  <section class="section" id="part-3">
+    <div class="section-kicker">
+      <span class="klabel">Part 3 · covers Zipf's law on the real corpus</span>
+      <h2>A few words do most of the work</h2>
+      <span class="tag concept">4 min live</span>
+    </div>
+    <p class="lede">Sort the vocabulary by how often each word appears and a strikingly regular shape appears: the second word is about half as frequent as the first, the tenth about a tenth. Manning, Raghavan and Schutze state it as Zipf's law: "the collection frequency cf_i of the i th most common term is proportional to 1/i" (Introduction to Information Retrieval, 2008). Here is the same law in Ledgerly's complaints.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Log-log plot of word count against rank for the 3,000 complaints. Rank 1 xxxx 11,461; rank 10 that 1,839; rank 100 through 195; rank 1,000 living 12; ranks 3,157 to 5,250 appear once. A dashed exact 1-over-rank line sits just under the dots. Side panel: slope -1.11 over the top 1,000 ranks; the 10 most frequent words are 31.4% of all tokens; 39.9% of the 5,250 words appear exactly once, 2,094 words.">
+        <defs>
+          <filter id="s1cSk" x="-3%" y="-3%" width="106%" height="106%"><feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="23" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.4" xChannelSelector="R" yChannelSelector="G"/></filter>
+          <pattern id="s1cHc" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(-38)"><line x1="0" y1="0" x2="0" y2="7" stroke="#592A22" stroke-width="1" opacity=".5"/></pattern>
+          <marker id="s1cAr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M1 1 L9 5 L1 9" fill="none" stroke="#2B1C18" stroke-width="1.6" stroke-linecap="round"/></marker>
+        </defs>
+        <style>
+          .s1cH { font: 800 12px Inter, sans-serif; fill: #2B1C18; }
+          .s1cL { font: 600 12px Inter, sans-serif; fill: #2B1C18; }
+          .s1cS { font: 400 11px Inter, sans-serif; fill: #5E4A44; }
+          .s1cB { font: 800 11px Inter, sans-serif; fill: #1E4566; }
+          .s1cV { font: 800 20px Inter, sans-serif; fill: #3B1A15; }
+          .s1cA { font: 700 11px Inter, sans-serif; fill: #592A22; }
+          .s1cN { font: 400 12px Inter, sans-serif; fill: #5E4A44; }
+        </style>
+
+        <text class="s1cH" x="30" y="22">RANK AGAINST COUNT, BOTH ON LOG SCALES</text>
+        <text class="s1cA" x="30" y="40">count (log)</text>
+
+        <g filter="url(#s1cSk)" fill="none" stroke="#2B1C18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M84 46 L84 258 L566 258" stroke-width="1.5"/>
+          <path d="M90 51 L560 233" stroke="#592A22" stroke-dasharray="6 4"/>
+          <path d="M532 250 L560 250" stroke="#1E4566" stroke-width="5"/>
+          <circle cx="90" cy="51" r="5" fill="#592A22"/>
+          <circle cx="128" cy="65" r="4.5" fill="#592A22"/>
+          <circle cx="150" cy="68" r="4.5" fill="#592A22"/>
+          <circle cx="178" cy="74" r="4.5" fill="#592A22"/>
+          <circle cx="216" cy="90" r="4.5" fill="#592A22"/>
+          <circle cx="277" cy="115" r="4.5" fill="#592A22"/>
+          <circle cx="343" cy="138" r="4.5" fill="#592A22"/>
+          <circle cx="403" cy="161" r="4.5" fill="#592A22"/>
+          <circle cx="469" cy="197" r="4.5" fill="#592A22"/>
+          <rect x="600" y="48" width="250" height="64" rx="10" transform="rotate(-0.5 725 80)" fill="#FFFFFF"/>
+          <rect x="600" y="124" width="250" height="64" rx="10" transform="rotate(0.5 725 156)" fill="#F8EEEB"/>
+          <rect x="600" y="200" width="250" height="64" rx="10" transform="rotate(-0.4 725 232)" fill="#A9C8E3"/>
+        </g>
+
+        <text class="s1cS" x="78" y="58" text-anchor="end">10,000</text>
+        <text class="s1cS" x="78" y="156" text-anchor="end">100</text>
+        <text class="s1cS" x="78" y="254" text-anchor="end">1</text>
+        <text class="s1cS" x="90" y="276" text-anchor="middle">1</text>
+        <text class="s1cS" x="216" y="276" text-anchor="middle">10</text>
+        <text class="s1cS" x="343" y="276" text-anchor="middle">100</text>
+        <text class="s1cS" x="469" y="276" text-anchor="middle">1,000</text>
+        <text class="s1cB" x="508" y="276">seen once</text>
+        <text class="s1cA" x="325" y="296" text-anchor="middle">rank (log)</text>
+
+        <text class="s1cL" x="140" y="50">xxxx 11,461</text>
+        <text class="s1cL" x="228" y="84">that 1,839</text>
+        <text class="s1cL" x="354" y="132">through 195</text>
+        <text class="s1cL" x="480" y="190">living 12</text>
+        <text class="s1cA" x="404" y="230">exact 1/rank</text>
+
+        <text class="s1cV" x="616" y="80">-1.11</text>
+        <text class="s1cS" x="616" y="100">log-log slope, top 1,000 ranks</text>
+        <text class="s1cV" x="616" y="156">31.4%</text>
+        <text class="s1cS" x="616" y="176">of tokens are the top 10 words</text>
+        <text class="s1cV" x="616" y="232">39.9%</text>
+        <text class="s1cL" x="616" y="252">of words appear once (2,094)</text>
+
+        <text class="s1cN" x="30" y="312">Raw tokens. A perfect Zipf line has slope -1; most columns of the table are words almost nobody uses.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the counts fall almost exactly as 1/rank: a handful of words fill a third of the text, and two in five words appear once</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>What Zipf means for your table<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p><strong>The head is noise for routing.</strong> The ten most frequent tokens (xxxx, i, the, to, my, a, and, of, on, that) are 31.4% of all text and say nothing about which queue a complaint belongs in. Session 2 shows TF-IDF pushing them down automatically.</p>
+        <p><strong>The tail is mostly empty columns.</strong> 2,094 of the 5,250 words (39.9%) appear exactly once in the whole corpus. Together they are only 2,094 of 141,198 tokens (1.5%), yet they are two columns in every five. A rule like "keep words that appear in at least two documents" cuts the table by roughly two fifths and loses almost no text. It also deletes every rare product name and every typo, which is sometimes exactly the signal you wanted.</p>
+        <p><strong>The vocabulary never stops growing.</strong> Add more complaints and new rare words keep arriving, so a model built today will meet words it has never seen. Every method in the next sessions has to say what it does with them.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Why the slope is -1.11 and not exactly -1<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The slope comes from a least-squares line through log count against log rank for the top 1,000 words. Raw tokens give -1.11; after removing stop words, xxxx and stemming it is -0.98. Zipf's law is an empirical regularity, not a theorem, and its exponent moves with the corpus, the tokeniser and the range of ranks you fit. Manning, Raghavan and Schutze present it as a model of the distribution of terms, good enough to estimate how big an index will be; treat it the same way.</p>
+      </div>
+    </details>
+
+    <div class="ntx-mount" data-ntx="zipf"></div>
+
+    <div class="callout example">
+      <p><span class="ex-pill">Real world</span> <strong>The index that kept growing.</strong> A support team builds a keyword dashboard from last quarter's tickets and freezes the vocabulary. Six months later a new product name dominates the tickets and appears nowhere on the dashboard, because it was not in the frozen word list. Zipf predicts it: new words never stop arriving. Refresh the vocabulary on a schedule and log what entered it.</p>
+    </div>
+  </section>
+
+  <section class="section" id="demo-1">
+    <div class="section-kicker">
+      <span class="klabel">Build-along</span>
+      <h2>Ledgerly's corpus card</h2>
+      <span class="tag demo">★ 22 min · everyone builds</span>
+    </div>
+    <p class="lede">A corpus card is one page that lets a stranger rebuild your table: where the text came from, which snapshot, what was filtered, what was cut, and the numbers that describe the result. You will read the card the bench computes, rebuild part of it in Python, and write Ledgerly's version 0.1 (Constructed Ledgerly example; the complaints are real).</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 250" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Five steps from source to corpus card. 1, the snapshot: February 2024, CC0, 1,689,573 narratives with text. 2, shard 0, 2023, six queues mapped: 268,951 eligible rows. 3, quota sample, seed 2023: 3,000 narratives. 4, cut to the first 50 words and split: 2,400 train, 600 held out. 5, the corpus card, every choice listed, highlighted. Under step 1: the narrative field is gone from today's export.">
+        <defs>
+          <filter id="s1dSk" x="-3%" y="-3%" width="106%" height="106%"><feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="29" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.4" xChannelSelector="R" yChannelSelector="G"/></filter>
+          <pattern id="s1dHc" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(-38)"><line x1="0" y1="0" x2="0" y2="7" stroke="#592A22" stroke-width="1" opacity=".5"/></pattern>
+          <marker id="s1dAr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M1 1 L9 5 L1 9" fill="none" stroke="#2B1C18" stroke-width="1.6" stroke-linecap="round"/></marker>
+        </defs>
+        <style>
+          .s1dH { font: 800 12px Inter, sans-serif; fill: #2B1C18; }
+          .s1dL { font: 600 12px Inter, sans-serif; fill: #2B1C18; }
+          .s1dS { font: 400 11px Inter, sans-serif; fill: #5E4A44; }
+          .s1dB { font: 800 11px Inter, sans-serif; fill: #1E4566; }
+          .s1dA { font: 700 11px Inter, sans-serif; fill: #592A22; }
+          .s1dN { font: 400 12px Inter, sans-serif; fill: #5E4A44; }
+        </style>
+
+        <text class="s1dH" x="30" y="26">FROM PUBLIC SOURCE TO A TABLE ANYONE CAN REBUILD</text>
+
+        <g filter="url(#s1dSk)" fill="none" stroke="#2B1C18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="23" y="50" width="150" height="66" rx="10" transform="rotate(-0.8 98 83)" fill="#F8EEEB"/>
+          <rect x="194" y="50" width="150" height="66" rx="10" transform="rotate(0.7 269 83)" fill="#FFFFFF"/>
+          <rect x="365" y="50" width="150" height="66" rx="10" transform="rotate(-0.5 440 83)" fill="#FFFFFF"/>
+          <rect x="536" y="50" width="150" height="66" rx="10" transform="rotate(0.6 611 83)" fill="#FFFFFF"/>
+          <rect x="707" y="50" width="150" height="66" rx="10" transform="rotate(-0.7 782 83)" fill="#A9C8E3"/>
+          <path d="M175 83 L190 83" marker-end="url(#s1dAr)"/>
+          <path d="M346 83 L361 83" marker-end="url(#s1dAr)"/>
+          <path d="M517 83 L532 83" marker-end="url(#s1dAr)"/>
+          <path d="M688 83 L703 83" marker-end="url(#s1dAr)"/>
+          <path d="M98 118 L98 144"/>
+          <path d="M269 118 L269 144"/>
+          <path d="M440 118 L440 144"/>
+          <path d="M611 118 L611 144"/>
+          <path d="M782 118 L782 144"/>
+          <rect x="27" y="146" width="142" height="32" rx="16" fill="#F8EEEB"/>
+          <rect x="198" y="146" width="142" height="32" rx="16" fill="#F8EEEB"/>
+          <rect x="369" y="146" width="142" height="32" rx="16" fill="#F8EEEB"/>
+          <rect x="540" y="146" width="142" height="32" rx="16" fill="#F8EEEB"/>
+          <rect x="711" y="146" width="142" height="32" rx="16" fill="#F8EEEB"/>
+        </g>
+
+        <text class="s1dH" x="98" y="77" text-anchor="middle">1 · Snapshot</text>
+        <text class="s1dS" x="98" y="97" text-anchor="middle">Feb 2024, CC0</text>
+        <text class="s1dH" x="269" y="77" text-anchor="middle">2 · 2023 rows</text>
+        <text class="s1dS" x="269" y="97" text-anchor="middle">six queues mapped</text>
+        <text class="s1dH" x="440" y="77" text-anchor="middle">3 · Quota sample</text>
+        <text class="s1dS" x="440" y="97" text-anchor="middle">seed 2023</text>
+        <text class="s1dH" x="611" y="77" text-anchor="middle">4 · Cut + split</text>
+        <text class="s1dS" x="611" y="97" text-anchor="middle">first 50 words</text>
+        <text class="s1dH" x="782" y="77" text-anchor="middle">5 · Corpus card</text>
+        <text class="s1dL" x="782" y="97" text-anchor="middle">every choice listed</text>
+
+        <text class="s1dL" x="98" y="167" text-anchor="middle">1,689,573 with text</text>
+        <text class="s1dL" x="269" y="167" text-anchor="middle">268,951 eligible</text>
+        <text class="s1dL" x="440" y="167" text-anchor="middle">3,000 narratives</text>
+        <text class="s1dL" x="611" y="167" text-anchor="middle">2,400 / 600</text>
+        <text class="s1dL" x="782" y="167" text-anchor="middle">Ledgerly playbook</text>
+
+        <text class="s1dB" x="98" y="202" text-anchor="middle">gone from today's export</text>
+        <text class="s1dN" x="30" y="232">Each arrow is a decision. Write it on the card and anyone can rebuild the same 3,000 rows.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - five recorded steps turn a public snapshot into a reproducible table; skip one and nobody can rebuild your numbers</figcaption>
+    </figure>
+
+    <div class="steps">
+      <div class="step">
+        <p><strong>Read the card the bench computed.</strong> The widget below counts the shipped sample in your browser. Read the six tiles and the queue table aloud: 3,000 documents, 141,198 tokens, 5,250 distinct words, 39.9% of words seen once, 8.1% of tokens are <code>xxxx</code>, and a median full narrative of 136 words. Then read the last column: the sample is rebalanced, so credit reporting is 30% of the sample but 76.7% of the real 2023 rows.</p>
+        <div class="prompt-box good"><span class="label">★ Step 1 · what the card must answer</span>Where did the text come from, and when was it taken?
+What is one document?
+What was filtered out, and what was cut?
+How many documents, tokens and distinct words?
+How does the sample's mix differ from the real mix?</div>
+        <div class="ntx-mount" data-ntx="card"></div>
+      </div>
+
+      <div class="step">
+        <p><strong>Check the field exists before you build on it.</strong> On your own machine, download one shard of the snapshot (about 300 MB) and confirm the narrative column is there. Then count the 2023 rows. The shard holds 286,781 complaints dated 2023 across every product; the bench keeps the six Ledgerly queues.</p>
+        <div class="prompt-box good"><span class="label">★ Step 2 · Python, run locally (pandas + pyarrow)</span>import urllib.request, pandas as pd
+url = ("https://huggingface.co/datasets/BEE-spoke-data/consumer-finance-complaints/"
+       "resolve/main/has-text/train-00000-of-00003.parquet")
+urllib.request.urlretrieve(url, "cfpb_shard0.parquet")   # about 300 MB, CC0
+
+df = pd.read_parquet("cfpb_shard0.parquet",
+                     columns=["Date received", "Product", "Consumer complaint narrative"])
+print("Consumer complaint narrative" in df.columns)       # True in the Feb 2024 snapshot
+df = df[df["Date received"].str[:4] == "2023"]
+print(len(df))                                             # 286781
+print(df["Product"].value_counts().head(8))</div>
+      </div>
+
+      <div class="step">
+        <p><strong>Write the tokeniser down as code, not as a description.</strong> These are the bench's export rules. Run them on one narrative and compare with the token view in the normaliser above (complaint 6400037 is its first example).</p>
+        <div class="prompt-box good"><span class="label">★ Step 3 · the export tokeniser</span>import re
+
+def tokens(text, keep=50):
+    t = text.lower().replace("'", "")
+    t = re.sub(r"\{\$[^}]*\}", " ", t)            # money amounts like {$3400.00}
+    words = re.findall(r"[a-z]+", t)              # letters only: numbers and punctuation go
+    words = ["xxxx" if re.fullmatch(r"x{2,}", w) else w for w in words]
+    return words[:keep]                            # the bench keeps the first 50
+
+print(tokens(df["Consumer complaint narrative"].iloc[0]))</div>
+      </div>
+
+      <div class="step">
+        <p><strong>Decide the three normalisation switches, with reasons.</strong> Use the normaliser widget in Part 2 to see what each costs on the whole corpus. Ledgerly's routing task is product words, so the team keeps case folding, records redaction marks as a separate count, and leaves stop words and stemming to be tested on the bench in session 4 rather than decided by taste.</p>
+        <div class="prompt-box good"><span class="label">★ Step 4 · normalisation decisions (Constructed Ledgerly example)</span>Lowercase: yes (export). Cost: "US" and "us" collide; names lose case.
+xxxx marks: kept as one token for now; 8.1% of tokens; never a routing signal.
+Stop words: undecided; removes 46% of tokens; test on the bench (session 4).
+Stemmer: undecided; 5,250 to 4,159 words; breaks "wells", splits "charg"/"charge".</div>
+      </div>
+
+      <div class="step">
+        <p><strong>Write version 0.1 of the corpus card into the playbook.</strong> Paste the block below as the first page of Ledgerly's text playbook and fill your own name and date. Every later session adds a page and points back to this one.</p>
+        <div class="prompt-box good"><span class="label">★ Step 5 · Ledgerly text playbook, page 1: corpus card v0.1 (Constructed Ledgerly example)</span>Source: CFPB Consumer Complaint Database, CC0. Narratives published with consumer consent.
+Snapshot: Feb 2024 public export (mirror: Hugging Face BEE-spoke-data/consumer-finance-complaints,
+  has-text shard 0). The current CFPB export has no narrative field (checked 2026-11-19).
+Document: one complaint narrative, received 1 Jan to 31 Dec 2023.
+Queues (6): credit reporting, debt collection, credit card, checking or savings,
+  student loan, vehicle loan or lease. Two product names changed in Aug 2023; both mapped.
+Sample: 3,000 by fixed quota (900/600/450/450/300/300), seed 2023. REBALANCED:
+  credit reporting is 30% here, 76.7% of the real 2023 rows.
+Cut: first 50 word tokens per narrative (84.1% were longer; median full length 136 words).
+Split: 2,400 train / 600 held out, stratified, never used for choices.
+Size: 141,198 tokens, 5,250 distinct words, 39.9% seen once, xxxx = 8.1% of tokens.
+Owner: ____________   Date: ____________</div>
+      </div>
+    </div>
+
+    <div class="callout tip">
+      <p><strong>The card is for the person who inherits your model.</strong> In a year someone will ask why the classifier never sends anything to "Prepaid card". The answer (the queue did not exist in the January data and the sample mapped only six queues) should take them thirty seconds on page 1, not a week of archaeology.</p>
+    </div>
+  </section>
+
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Before session 2</h2>
+      <span class="tag exercise">30 min</span>
+    </div>
+    <ol>
+      <li><strong>Write a corpus card for a text pile you own</strong>: tickets, survey comments, reviews, emails. Answer the five questions from step 1, even where the answer is "unknown".</li>
+      <li><strong>Find your redaction marks.</strong> Most real text has them: [NAME], ***, &lt;email&gt;. Count what share of tokens they are, and decide whether they stay.</li>
+      <li><strong>Run the normaliser with every switch on and off</strong> and note which single switch changes the vocabulary most and which changes the token count most. Explain why they differ.</li>
+      <li><strong>List five words your task would be hurt by losing</strong> to a standard stop list or a stemmer. Session 2 starts from your list.</li>
+    </ol>
+  </section>
+
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions</h2>
+    </div>
+    <p>Clear all three and session 1 gets stamped in your passport.</p>
+
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">1 · Ledgerly's table has 5,250 columns and each complaint keeps at most 50 tokens. What follows?</p>
+      <button class="qopt" type="button">A · The table is too small to train a model on</button>
+      <button class="qopt" type="button">B · Each complaint uses about 1% of the vocabulary, so it should be thrown away</button>
+      <button class="qopt" type="button">C · More than 99% of every row is zero, so text tables are stored sparsely, keeping only the non-zero cells</button>
+      <button class="qopt" type="button">D · The tokeniser is broken</button>
+      <p class="qwhy">At most 50 non-zero cells out of 5,250 is under 1% filled. That is normal for text, and it is why every library stores document-term matrices as sparse matrices.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">2 · Removing stop words deletes 46% of all tokens but only 119 of 5,250 columns. Why the difference?</p>
+      <button class="qopt" type="button">A · Stop words are few distinct words that each appear enormously often: Zipf's head</button>
+      <button class="qopt" type="button">B · The stop list is wrong</button>
+      <button class="qopt" type="button">C · Stop words appear only once each</button>
+      <button class="qopt" type="button">D · Columns and tokens always shrink by the same share</button>
+      <p class="qwhy">The most frequent words are a tiny set with huge counts. Removing them shrinks the text a lot and the vocabulary barely at all. Rare words do the opposite: two fifths of the columns, 1.5% of the tokens.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="3">
+      <p class="qtext">3 · The light stemmer turns "Wells" (as in Wells Fargo) into "well". What is the right response?</p>
+      <button class="qopt" type="button">A · Ignore it; stemming is always worth it</button>
+      <button class="qopt" type="button">B · Never stem anything</button>
+      <button class="qopt" type="button">C · Switch to a bigger language model</button>
+      <button class="qopt" type="button">D · Record it on the corpus card and test the stemmer on the actual task before deciding; protect names that matter</button>
+      <p class="qwhy">Every normalisation deletes something true. The right call is empirical and task-specific: session 4 shows the stemmer helping the logistic model slightly, and session 5 shows the same bug labelling a theme "well fargo".</p>
+    </div>
+
+    <p class="quiz-score"></p>
+  </section>
+
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Sources covered</span>
+      <h2>What this session teaches, and where it came from</h2>
+    </div>
+    <div class="covered">
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">CFPB Consumer Complaint Database</span><span class="note">consumerfinance.gov field list and API read at source 2026-11-19 (CC0, 19,251,022 records, no narrative field); narratives from the Feb 2024 snapshot (Hugging Face mirror, CC0)</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Bag of words</span><span class="note">Jurafsky and Martin, Speech and Language Processing, 2024 draft, ch 4, section 4.1; read at source</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Zipf's law</span><span class="note">Manning, Raghavan and Schutze (2008), Introduction to Information Retrieval, Cambridge UP; read at source</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Stop-word caveats</span><span class="note">scikit-learn user guide, "Text feature extraction", Using stop words; read at source</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">Stemming</span><span class="note">Porter (1980), Program 14(3): 130-137, cited; the bench runs a lighter suffix stripper, not Porter's algorithm</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Every number on this page</span><span class="note">Computed by the bench on the shipped sample; a plain-Python reference run gives the same values</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Ledgerly</span><span class="note">Constructed example; the complaints are real, the team is fictional</span></div>
+    </div>
+    <p class="mono" style="margin-top:14px">Every fact on this page, and its verification tier, is recorded in the course's source map.</p>
+  </section>
+
+  <section class="cheat" id="cheatsheet">
+    <h3>Session 1 cheat sheet <span>· pin this</span></h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>Name the document</b><span>One row = one what? Complaint, sentence, thread. Every later number depends on it.</span></div>
+      <div class="cheat-item"><b>The tokeniser is code</b><span>Lowercase, apostrophes, numbers, redactions: write the rules as a function, not a sentence.</span></div>
+      <div class="cheat-item"><b>Sparse by nature</b><span>50 tokens over 5,250 columns: over 99% zeros. Store only the non-zero cells.</span></div>
+      <div class="cheat-item"><b>Every filter deletes truth</b><span>Stop words: 46% of tokens. Stemmer: 1,091 fewer columns, some merged wrongly.</span></div>
+      <div class="cheat-item"><b>Zipf</b><span>Count falls as 1/rank. The top 10 words are a third of the text; two in five words appear once.</span></div>
+      <div class="cheat-item"><b>Corpus card first</b><span>Source, snapshot date, document, filters, cut, split, mix vs reality. Before any model.</span></div>
+    </div>
+  </section>
+
+  <div class="callout next">
+    <span class="nx-pill">Next session</span>
+    <p>The table exists; now the cells. Session 2 replaces raw counts with weights: TF-IDF pushes "the" and "xxxx" down and product words up, and bigrams buy back a little word order. You will compare the top words of all six queues under three weightings.</p>
+  </div>
+
+  <footer class="pagefoot">
+    <span>Session 1 of 6 · learn-nlp-text-analytics-with-phoebe · by Phoebe Fu &nbsp;·&nbsp; 📚 <a href="https://phoebefu6.github.io/learn-with-phoebe/">Learn with Phoebe ↗</a></span>
+    <span><a href="../index.html">← Course home</a> &nbsp;·&nbsp; <a href="02-weight-the-words.html">Next: Weight the words →</a></span>
+  </footer>
+
+</main>
+
+<script src="../assets/ntx-sample.js?v=2"></script>
+<script src="../assets/ntx-live.js?v=2"></script>
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

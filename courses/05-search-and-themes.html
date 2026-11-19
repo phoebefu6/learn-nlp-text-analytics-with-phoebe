@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- social:start -->
+<meta name="description" content="Session 5 of 6. Rank 3,000 real CFPB complaints with BM25 and cosine, watch k-means themes change with the seed, and track a theme that quadrupled the month student loan payments came back.">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Learn with Phoebe">
+<meta property="og:title" content="Search and themes - learn NLP and text analytics with phoebe">
+<meta property="og:description" content="Session 5 of 6. BM25 vs cosine, k1 and b defaults that disagree, unstable k-means themes and a monthly theme watchlist, computed in your browser.">
+<meta property="og:url" content="https://phoebefu6.github.io/learn-nlp-text-analytics-with-phoebe/courses/05-search-and-themes.html">
+<meta property="og:image" content="https://phoebefu6.github.io/learn-nlp-text-analytics-with-phoebe/assets/og-cover.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Search and themes - learn NLP and text analytics with phoebe">
+<meta name="twitter:description" content="Session 5 of 6. BM25, k-means themes that move with the seed, and drift on real complaint text.">
+<meta name="twitter:image" content="https://phoebefu6.github.io/learn-nlp-text-analytics-with-phoebe/assets/og-cover.png">
+<!-- social:end -->
+<title>Session 5 · Search and themes - learn NLP and text analytics with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=2">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-nlp-text-analytics-with-phoebe</a> / Session 5 of 6</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn NLP &amp; Text Analytics with Phoebe · Session 5 of 6</div>
+    <h1>Search and themes: <span class="accent">find it, then watch it move</span></h1>
+    <p class="sub">Routing answers "which queue?". The questions that land on an analyst's desk next are different: "show me every complaint about late fees" and "what are people complaining about this month that they were not last month?". Tonight we rank complaints two ways, let k-means propose themes and watch them change with a random seed, then follow one theme that more than quadrupled in four months.</p>
+    <div class="chip-row">
+      <span class="chip level">🟠 Stretch</span>
+      <span class="chip audience">Analysts and data scientists handed a pile of free text</span>
+      <span class="chip audience">Light Python, everything also runs in the page</span>
+      <span class="chip time">45 min</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Welcome</span>
+      <span class="a2" style="flex:4">3-18 · BM25, themes, drift</span>
+      <span class="a3" style="flex:5">18-40 · Build-along: the theme watchlist</span>
+      <span class="a4" style="flex:1">40-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>Where we start</h2>
+    </div>
+    <p class="lede">Sessions 1 to 4 built a table, weighted it and routed it, and the bench told us how often the router is wrong. Ledgerly's complaints team (Constructed Ledgerly example) now wants two more things from the same 3,000 real CFPB narratives: a search box that ranks the right complaints first, and an early warning when a kind of complaint starts rising. Both run on the vectors you already have. Both come with a choice nobody can make for you: the k1 and b of the ranking, and the seed and k of the themes.</p>
+
+    <div class="legend">
+      <span class="pill">🎫 Clear all three quiz questions to stamp your passport</span>
+      <span class="pill">Live = presented in the 45 minutes</span>
+      <span class="pill">Self-study = the full depth, after class</span>
+      <span class="pill">★ Build-along = do it yourself, in the page</span>
+    </div>
+
+    <div class="callout win">
+      <p><strong>★ What you walk out with tonight.</strong> Page 5 of Ledgerly's text playbook: a written search setup (ranking, k1, b, what the index cannot find) and a theme watchlist of four tracked queries or themes, each with a monthly threshold and a named owner. Plus the habit of re-running a theme with three seeds before you put its name on a slide.</p>
+    </div>
+  </section>
+
+  <section class="section" id="part-1">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers search as an analytics tool: BM25, cosine, k1 and b</span>
+      <h2>BM25 and cosine: two ways to rank the same matches</h2>
+      <span class="tag concept">5 min live</span>
+    </div>
+    <p class="lede">Finding the complaints that contain "late", "fee" or "refund" is easy: 274 of the 3,000 do. Deciding which of the 274 to read first is the hard part, and two standard rankings disagree about it. The difference comes down to one question: how much is the fifth mention of "fee" worth compared with the first?</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 344" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Line chart of how much one query term contributes to a BM25 score as it repeats in a complaint of average length, from the formula tf times (k1 plus 1) over (tf plus k1). At k1 = 0 every count from 1 to 8 is worth 1. At k1 = 1.2, the bench setting, 1 mention is worth 1, 2 are worth 1.38, 4 are worth 1.69 and 8 are worth 1.91, never above 2.2. At k1 = 2, 8 mentions are worth 2.40, never above 3. A raw count with no cap reaches 3 at three mentions.">
+        <defs>
+          <filter id="s5aSk" x="-3%" y="-3%" width="106%" height="106%"><feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="51" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.4" xChannelSelector="R" yChannelSelector="G"/></filter>
+          <pattern id="s5aHc" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(-38)"><line x1="0" y1="0" x2="0" y2="7" stroke="#592A22" stroke-width="1" opacity=".5"/></pattern>
+          <marker id="s5aAr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M1 1 L9 5 L1 9" fill="none" stroke="#2B1C18" stroke-width="1.6" stroke-linecap="round"/></marker>
+        </defs>
+        <style>
+          .s5aH { font: 800 12px Inter, sans-serif; fill: #2B1C18; }
+          .s5aL { font: 600 12px Inter, sans-serif; fill: #2B1C18; }
+          .s5aS { font: 400 11px Inter, sans-serif; fill: #5E4A44; }
+          .s5aB { font: 800 11px Inter, sans-serif; fill: #1E4566; }
+          .s5aA { font: 700 11px Inter, sans-serif; fill: #592A22; }
+          .s5aN { font: 400 12px Inter, sans-serif; fill: #5E4A44; }
+        </style>
+
+        <text class="s5aH" x="30" y="26">WHAT THE N-TH MENTION OF A WORD IS WORTH IN BM25</text>
+        <text class="s5aA" x="30" y="50">contribution (times idf)</text>
+
+        <g filter="url(#s5aSk)" fill="none" stroke="#2B1C18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M80 60 L80 270 L462 270" stroke-width="1.5"/>
+          <path d="M126 205 L218 75" stroke="#5E4A44" stroke-dasharray="5 5"/>
+          <path d="M126 205 L172 205 L218 205 L264 205 L310 205 L356 205 L402 205 L448 205" stroke="#8A4A3C" stroke-dasharray="7 4"/>
+          <path d="M126 205 L172 172.5 L218 153 L264 140 L310 130.7 L356 123.8 L402 118.3 L448 114" stroke="#592A22"/>
+          <path d="M126 205 L172 180.6 L218 167.9 L264 160 L310 154.7 L356 150.9 L402 147.9 L448 145.7" stroke="#1E4566" stroke-width="3.5"/>
+          <circle cx="448" cy="114" r="4" fill="#592A22"/>
+          <circle cx="448" cy="145.7" r="4.5" fill="#A9C8E3"/>
+          <circle cx="448" cy="205" r="4" fill="#8A4A3C"/>
+          <rect x="590" y="60" width="266" height="62" rx="10" transform="rotate(-0.5 723 91)" fill="#FFFFFF"/>
+          <rect x="590" y="134" width="266" height="62" rx="10" transform="rotate(0.5 723 165)" fill="#A9C8E3"/>
+          <rect x="590" y="208" width="266" height="62" rx="10" transform="rotate(-0.4 723 239)" fill="#F8EEEB"/>
+          <circle cx="532" cy="70" r="13"/>
+          <path d="M541 80 L556 95" stroke-width="3"/>
+        </g>
+
+        <text class="s5aS" x="72" y="274" text-anchor="end">0</text>
+        <text class="s5aS" x="72" y="209" text-anchor="end">1</text>
+        <text class="s5aS" x="72" y="144" text-anchor="end">2</text>
+        <text class="s5aS" x="72" y="79" text-anchor="end">3</text>
+        <text class="s5aS" x="126" y="288" text-anchor="middle">1</text>
+        <text class="s5aS" x="172" y="288" text-anchor="middle">2</text>
+        <text class="s5aS" x="264" y="288" text-anchor="middle">4</text>
+        <text class="s5aS" x="448" y="288" text-anchor="middle">8</text>
+        <text class="s5aA" x="264" y="306" text-anchor="middle">times the word appears in the complaint</text>
+
+        <text class="s5aS" x="228" y="80">raw count, no cap</text>
+        <text class="s5aL" x="460" y="110">k1 = 2 · 2.40</text>
+        <text class="s5aB" x="460" y="150">k1 = 1.2 · 1.91</text>
+        <text class="s5aL" x="460" y="209">k1 = 0 · 1.00</text>
+
+        <text class="s5aH" x="606" y="86">k1 = 0 · binary</text>
+        <text class="s5aS" x="606" y="106">repeats add nothing (IIR: binary)</text>
+        <text class="s5aH" x="606" y="160">k1 = 1.2 · the bench</text>
+        <text class="s5aL" x="606" y="180">8 mentions: 1.91 · ceiling 2.2</text>
+        <text class="s5aH" x="606" y="234">k1 = 2 · R and Z's common pair</text>
+        <text class="s5aS" x="606" y="254">8 mentions: 2.40 · ceiling 3.0</text>
+
+        <text class="s5aN" x="30" y="330">From the formula tf(k1 + 1) / (tf + k1) at average length. The bench uses k1 1.2 and b 0.75.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - BM25 caps how much repeating a word can buy: k1 sets the ceiling, and k1 = 0 turns the count into a yes or no</figcaption>
+    </figure>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>BM25 in words: three dials on one score<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>BM25 scores a complaint against a query by adding up one contribution per query word the complaint contains. Each contribution is the product of three ideas you already know from session 2.</p>
+        <p><strong>Rare words count more (idf).</strong> The bench uses Lucene's version, idf = ln(1 + (N - df + 0.5) / (df + 0.5)), where N is 3,000 complaints and df is how many contain the word. "Refund" outranks "account" because fewer complaints use it.</p>
+        <p><strong>Repeats saturate (k1).</strong> The term-frequency part is tf(k1 + 1) / (tf + k1). The first mention is worth 1; every further mention adds less, and the total can never pass k1 + 1. The figure above draws exactly that curve from the formula.</p>
+        <p><strong>Long texts are discounted (b).</strong> Inside the same fraction, k1 is multiplied by (1 - b + b times length / average length). With b = 1 a complaint twice the average length needs more mentions to score the same; with b = 0 length is ignored. The bench indexes the first 50 words of each complaint, after stop words and <code>xxxx</code> come out, so lengths vary less than they would in full text; on your own long documents b has more to do.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The defaults disagree, and that is the lesson<span class="mini">1 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Manning, Raghavan and Schutze give the textbook setting: "reasonable values are to set k1 and k3 to a value between 1.2 and 2 and b = 0.75" (Introduction to Information Retrieval, 2008). They also note that "a k1 value of 0 corresponds to a binary model".</p>
+        <p>Robertson and Zaragoza, writing about the framework BM25 came from, say "a common combination would be b = 0.5 and k1 = 2", and that "many experiments suggest a somewhat lower value of k1 and a somewhat higher value of b" (Foundations and Trends in IR 3(4): 333-389, 2009). So one source suggests a b of 0.75, another reports 0.5 as common and then reports experiments pulling the other way.</p>
+        <p>Nobody here is wrong. The best k1 and b depend on how long your documents are and how people write them, which is why the bench ships with 1.2 and 0.75 and lets you move both. The professional move is to write down the values you chose, and to change them only after checking a set of queries whose right answers you know.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Four real queries, four lessons<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p><strong>"late fee refund": same matches, two rankings.</strong> 274 complaints contain at least one of the three words. BM25 puts complaint 6594476 (vehicle loan) first; cosine on TF-IDF puts 7449382 (checking or savings, an annual fee on an IRA) first. Only three ids appear in both top fives. Set k1 to 0 and BM25's top five reshuffles again, to 7668748, 6594476, 6608852, 6645804, 7142738.</p>
+        <p><strong>"repossessed my car": the easy case.</strong> 139 matches, and every complaint in both top fives is a vehicle loan complaint. When the vocabulary is specific, any reasonable ranking works.</p>
+        <p><strong>"identity theft inquiry": the top five are one template.</strong> 284 matches. The top five under both rankings are five different complaints (6697815, 7166396, 7215809, 7252034, 7270412) whose opening words are identical, "i am a victim of identity theft please remove this fraud inquiry from my", all tied at a BM25 score of 11.825. Templated complaints are common in credit reporting, and search is often how you discover them. They are also the near-duplicate risk from session 4: copies of one letter can sit on both sides of a train and test split.</p>
+        <p><strong>"zelle scam": a query can only find words the index kept.</strong> Only "scam" survives normalising (13 complaints). "Zelle" is not in the index at all, because it never appears in the first 50 words of any of the 3,000 complaints. The search did not fail; the session 1 decision to keep 50 words did.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Cosine on TF-IDF: the other ranking<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Jurafsky and Martin put it plainly: "By far the most common similarity metric is the cosine" (Speech and Language Processing, 2026 draft, ch 5). Cosine treats the query and each complaint as TF-IDF vectors and scores the angle between them. Because each complaint vector is divided by its own length, a short complaint dense in one query word scores high, and a word repeated five times keeps adding weight in proportion.</p>
+        <p>BM25 makes the opposite bets: repeats saturate, and length is discounted by a dial you control. Neither is the true ranking. For Ledgerly the useful habit is to run both on a handful of queries, read the disagreements, and pick the one whose top five your complaint handlers would have picked.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Where search goes next (and which side this session takes)<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Here search is an analytics tool: a person types a query to count, read and monitor complaints across a corpus. Two neighbouring jobs use the same formula for different ends. Working BM25 by hand to retrieve the right policy clause for an assistant lives in <a href="https://phoebefu6.github.io/learn-ship-internal-ai-assistant-with-phoebe/courses/b2-chunk-index-retrieve.html">Ship an Internal AI Assistant, b2</a>. Retrieving passages to hand to a large language model, and when embeddings beat word matching, lives in <a href="https://phoebefu6.github.io/learn-rag-with-phoebe/courses/b4-retrieval-basics.html">RAG, b4</a>.</p>
+      </div>
+    </details>
+
+    <div class="callout example">
+      <p><span class="ex-pill">Real world</span> <strong>The search that "proved" nothing was wrong.</strong> A product team searches the support inbox for a payment partner's name, finds almost nothing and reports the issue as rare. The index had been built from ticket subject lines only, and customers named the partner in the body. Before anyone quotes a search count, the person who built the index should say what text went into it and what was cut.</p>
+    </div>
+  </section>
+
+  <section class="section" id="part-2">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers k-means themes, seed instability, NMF and LDA</span>
+      <h2>Themes are a view, not a truth</h2>
+      <span class="tag concept">5 min live</span>
+    </div>
+    <p class="lede">Ask k-means for six groups and it will always return six groups, each with a tidy list of top words that looks like a finding. Change only the random starting point and some of those groups split, merge or swap members. Before a theme gets a name on a slide, check how much of it survives a second seed.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Schematic: the same 12 complaints clustered twice. Seed 1 makes three themes, T1, T2 and T3, of four complaints each. Seed 2, on the same data, splits T1 in half, merges the other half of T1 with half of T2, and merges the rest of T2 with all of T3. Real result on the bench: pair agreement between seed 1 and seed 2 at k 6 is 0.546; seed 1 against seed 3 is 0.496; at k 4, seed 3 agrees only 0.355.">
+        <defs>
+          <filter id="s5bSk" x="-3%" y="-3%" width="106%" height="106%"><feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="57" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.4" xChannelSelector="R" yChannelSelector="G"/></filter>
+          <pattern id="s5bHc" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(-38)"><line x1="0" y1="0" x2="0" y2="7" stroke="#592A22" stroke-width="1" opacity=".5"/></pattern>
+          <marker id="s5bAr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M1 1 L9 5 L1 9" fill="none" stroke="#2B1C18" stroke-width="1.6" stroke-linecap="round"/></marker>
+        </defs>
+        <style>
+          .s5bH { font: 800 12px Inter, sans-serif; fill: #2B1C18; }
+          .s5bL { font: 600 12px Inter, sans-serif; fill: #2B1C18; }
+          .s5bS { font: 400 11px Inter, sans-serif; fill: #5E4A44; }
+          .s5bB { font: 800 11px Inter, sans-serif; fill: #1E4566; }
+          .s5bV { font: 800 20px Inter, sans-serif; fill: #3B1A15; }
+          .s5bA { font: 700 11px Inter, sans-serif; fill: #592A22; }
+          .s5bN { font: 400 12px Inter, sans-serif; fill: #5E4A44; }
+        </style>
+
+        <text class="s5bH" x="30" y="26">SAME COMPLAINTS, SAME k, TWO RANDOM STARTS</text>
+        <text class="s5bS" x="360" y="26">dots coloured by their seed 1 theme</text>
+        <text class="s5bA" x="40" y="62">Seed 1</text>
+        <text class="s5bA" x="472" y="62">Seed 2</text>
+
+        <g filter="url(#s5bSk)" fill="none" stroke="#2B1C18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="24" y="44" width="400" height="200" rx="12" transform="rotate(-0.4 224 144)" fill="#FFFFFF"/>
+          <rect x="456" y="44" width="400" height="200" rx="12" transform="rotate(0.4 656 144)" fill="#FFFFFF"/>
+          <ellipse cx="110" cy="146" rx="50" ry="60" fill="#F8EEEB"/>
+          <ellipse cx="224" cy="146" rx="50" ry="60" fill="#F8EEEB"/>
+          <ellipse cx="338" cy="146" rx="50" ry="60" fill="#F8EEEB"/>
+          <circle cx="92" cy="122" r="7" fill="#592A22"/>
+          <circle cx="128" cy="126" r="7" fill="#592A22"/>
+          <circle cx="96" cy="168" r="7" fill="#592A22"/>
+          <circle cx="130" cy="172" r="7" fill="#592A22"/>
+          <circle cx="206" cy="122" r="7" fill="#FFFFFF"/>
+          <circle cx="242" cy="126" r="7" fill="#FFFFFF"/>
+          <circle cx="210" cy="168" r="7" fill="#FFFFFF"/>
+          <circle cx="244" cy="172" r="7" fill="#FFFFFF"/>
+          <circle cx="320" cy="122" r="7" fill="#DDB8AD"/>
+          <circle cx="356" cy="126" r="7" fill="#DDB8AD"/>
+          <circle cx="324" cy="168" r="7" fill="#DDB8AD"/>
+          <circle cx="358" cy="172" r="7" fill="#DDB8AD"/>
+          <ellipse cx="520" cy="146" rx="34" ry="52" fill="#F8EEEB"/>
+          <ellipse cx="625" cy="146" rx="60" ry="64" fill="#A9C8E3"/>
+          <ellipse cx="770" cy="146" rx="74" ry="72" fill="#F8EEEB"/>
+          <circle cx="520" cy="124" r="7" fill="#592A22"/>
+          <circle cx="520" cy="168" r="7" fill="#592A22"/>
+          <circle cx="605" cy="118" r="7" fill="#592A22"/>
+          <circle cx="645" cy="118" r="7" fill="#592A22"/>
+          <circle cx="605" cy="174" r="7" fill="#FFFFFF"/>
+          <circle cx="645" cy="174" r="7" fill="#FFFFFF"/>
+          <circle cx="740" cy="106" r="7" fill="#FFFFFF"/>
+          <circle cx="800" cy="106" r="7" fill="#FFFFFF"/>
+          <circle cx="740" cy="146" r="7" fill="#DDB8AD"/>
+          <circle cx="800" cy="146" r="7" fill="#DDB8AD"/>
+          <circle cx="740" cy="186" r="7" fill="#DDB8AD"/>
+          <circle cx="800" cy="186" r="7" fill="#DDB8AD"/>
+          <rect x="430" y="132" width="20" height="20" rx="4" transform="rotate(8 440 142)" fill="#FFFFFF"/>
+          <circle cx="436" cy="138" r="1.6" fill="#2B1C18"/>
+          <circle cx="444" cy="146" r="1.6" fill="#2B1C18"/>
+          <rect x="24" y="262" width="832" height="44" rx="10" transform="rotate(-0.3 440 284)" fill="#F8EEEB"/>
+        </g>
+
+        <text class="s5bL" x="110" y="230" text-anchor="middle">T1</text>
+        <text class="s5bL" x="224" y="230" text-anchor="middle">T2</text>
+        <text class="s5bL" x="338" y="230" text-anchor="middle">T3</text>
+        <text class="s5bS" x="520" y="230" text-anchor="middle">half of T1</text>
+        <text class="s5bB" x="625" y="230" text-anchor="middle">T1 + T2 merged</text>
+        <text class="s5bS" x="770" y="230" text-anchor="middle">rest of T2 + all T3</text>
+
+        <text class="s5bV" x="44" y="292">0.546</text>
+        <text class="s5bL" x="118" y="290">real agreement, seed 1 vs seed 2 at k 6: pairs together in both runs / in either run</text>
+
+        <text class="s5bN" x="30" y="328">Schematic: 12 dots stand for 3,000 complaints. Seed 3 agrees 0.496 at k 6; at k 4, only 0.355.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the random start decides which groups k-means finds; on the bench, about half the "same theme" pairs survive a new seed</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>How the bench makes a theme<span class="mini">1 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Start from the TF-IDF table of session 2 with stop words and <code>xxxx</code> out, the light stemmer on, and only words that appear in at least 5 complaints: 1,365 features. Every complaint vector is scaled to length 1. Spherical k-means then picks k complaints at random as starting centres, assigns every complaint to the centre with the highest cosine, moves each centre to the average of its members, and repeats 20 times. A theme is one final group; its "top words" are the heaviest words in its centre.</p>
+        <p>The random pick in step one is the seed. Nothing else in the recipe is random, and nothing in the recipe guarantees that a different start ends in the same place.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Read seed 1's six themes<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>At k 6 and seed 1 the bench returns six themes of 722, 522, 333, 214, 489 and 720 complaints. Four of them tell you something different about text:</p>
+        <ul>
+          <li><strong>722 · [report credit information item account theft]</strong>: the credit reporting dispute, 75% of its members from that queue. A theme that mostly re-finds a queue.</li>
+          <li><strong>522 · [call car well fargo time vehicle]</strong>: "well fargo" is the light stemmer turning "Wells" into "well", the artefact from session 1, now printed as a theme label. Theme words inherit every normalisation choice.</li>
+          <li><strong>214 · [right u section violat consumer privacy]</strong>: a legal-template theme. "u" and "s" are what is left of "U.S.C." in citations of the Fair Credit Reporting Act. It groups complaints by how they are written, not by what went wrong.</li>
+          <li><strong>489 · [payment loan late student month account]</strong>: half its members (purity 0.50) are student loan complaints. Part 3 follows this one month by month.</li>
+        </ul>
+        <p>"Purity" is the share of a theme's complaints that come from its largest queue. Read it with care: the sample is rebalanced (credit reporting is 30% here and 76.7% of the real 2023 rows), so every purity on the bench would move on the real mix.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Same data, another seed: the agreement table<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Pair agreement takes every pair of complaints and asks: of the pairs that either run put together, what share did both runs put together? 1 means the same groups; values near 0 mean unrelated groupings. The widget compares each seed with seed 1 at the same k:</p>
+        <ul>
+          <li><strong>k 4:</strong> seed 2 0.487 · seed 3 0.355</li>
+          <li><strong>k 6:</strong> seed 2 0.546 · seed 3 0.496</li>
+          <li><strong>k 8:</strong> seed 2 0.487 · seed 3 0.387</li>
+        </ul>
+        <p>No setting comes close to 1. At k 8, seed 1 separates a student loan theme [loan student payment mohela plan interest] (318 complaints, purity 0.63) and an identity theft theme [credit report item information theft identity] (481, purity 0.84), so a larger k found sharper groups, and still did not make them stable. The honest sentence for a slide is "one reasonable grouping of these complaints", followed by the agreement value.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>NMF and LDA: two other ways to get themes (described, not run here)<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>k-means gives each complaint exactly one theme. Two widely used methods let a complaint belong to several themes at once. The bench runs neither; they are described so you recognise them in a vendor's tool or a colleague's notebook.</p>
+        <p><strong>Non-negative matrix factorisation (NMF).</strong> Lee and Seung factor the document-word table into two tables with no negative entries, which "allow[s] only additive, not subtractive, combinations"; on text it learns "semantic features of text" (Nature 401: 788-791, 1999). Each complaint becomes a weighted sum of parts, read the way you read a k-means centre.</p>
+        <p><strong>Latent Dirichlet allocation (LDA).</strong> Blei, Ng and Jordan describe "a generative probabilistic model for collections of discrete data such as text corpora" (JMLR 3: 993-1022, 2003): each document is a mixture of topics and each topic is a distribution over words.</p>
+        <p>Both start from random initial values too. Whatever method you choose, the check is the same as tonight's: re-run with other seeds and report how much survives.</p>
+      </div>
+    </details>
+
+    <div class="callout example">
+      <p><span class="ex-pill">Real world</span> <strong>The theme that vanished between two decks.</strong> An insights team presents eight "customer pain themes" in March. In June someone re-runs the notebook on the same data, gets a different random start, and "billing confusion" is gone, absorbed into two other themes. Leadership asks what changed in the business. Nothing did. Fixing the seed hides the problem; reporting the agreement across seeds shows it.</p>
+    </div>
+  </section>
+
+  <section class="section" id="part-3">
+    <div class="section-kicker">
+      <span class="klabel">Part 3 · covers volume drift, theme drift and label schema change</span>
+      <h2>Drift: the month the student loans came back</h2>
+      <span class="tag concept">5 min live</span>
+    </div>
+    <p class="lede">A theme is most useful when you count it over time. Split the 300 student loan complaints in the sample by the month they were received and a shape appears that nobody needed a model to find, lined up with two dates in the US Department of Education's own report.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 316" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Bar chart of student loan complaints per month in the sample, January to December 2023: 17, 14, 10, 5, 6, 7, 17, 24, 49, 67, 47, 37. A marker before September reads interest resumes 1 Sep 2023; a marker before October reads payments resume Oct 2023 (Federal Student Aid FY2024 Annual Report, p. 45). October, 67, is highlighted. Side notes: April 5 to October 67; the payment loan late student theme goes from 18 in June to 79 in October.">
+        <defs>
+          <filter id="s5cSk" x="-3%" y="-3%" width="106%" height="106%"><feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="63" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.4" xChannelSelector="R" yChannelSelector="G"/></filter>
+          <pattern id="s5cHc" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(-38)"><line x1="0" y1="0" x2="0" y2="7" stroke="#592A22" stroke-width="1" opacity=".5"/></pattern>
+          <marker id="s5cAr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M1 1 L9 5 L1 9" fill="none" stroke="#2B1C18" stroke-width="1.6" stroke-linecap="round"/></marker>
+        </defs>
+        <style>
+          .s5cH { font: 800 12px Inter, sans-serif; fill: #2B1C18; }
+          .s5cL { font: 600 12px Inter, sans-serif; fill: #2B1C18; }
+          .s5cS { font: 400 11px Inter, sans-serif; fill: #5E4A44; }
+          .s5cB { font: 800 11px Inter, sans-serif; fill: #1E4566; }
+          .s5cV { font: 800 18px Inter, sans-serif; fill: #3B1A15; }
+          .s5cA { font: 700 11px Inter, sans-serif; fill: #592A22; }
+          .s5cN { font: 400 12px Inter, sans-serif; fill: #5E4A44; }
+        </style>
+
+        <text class="s5cH" x="30" y="26">STUDENT LOAN COMPLAINTS PER MONTH, 2023 (SAMPLE)</text>
+
+        <g filter="url(#s5cSk)" fill="none" stroke="#2B1C18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M70 250 L656 250" stroke-width="1.5"/>
+          <rect x="80" y="205.8" width="36" height="44.2" fill="#F8EEEB"/>
+          <rect x="128" y="213.6" width="36" height="36.4" fill="#F8EEEB"/>
+          <rect x="176" y="224" width="36" height="26" fill="#F8EEEB"/>
+          <rect x="224" y="237" width="36" height="13" fill="#F8EEEB"/>
+          <rect x="272" y="234.4" width="36" height="15.6" fill="#F8EEEB"/>
+          <rect x="320" y="231.8" width="36" height="18.2" fill="#F8EEEB"/>
+          <rect x="368" y="205.8" width="36" height="44.2" fill="#F8EEEB"/>
+          <rect x="416" y="187.6" width="36" height="62.4" fill="#F8EEEB"/>
+          <rect x="464" y="122.6" width="36" height="127.4" fill="#DDB8AD"/>
+          <rect x="512" y="75.8" width="36" height="174.2" fill="#A9C8E3"/>
+          <rect x="560" y="127.8" width="36" height="122.2" fill="#DDB8AD"/>
+          <rect x="608" y="153.8" width="36" height="96.2" fill="#DDB8AD"/>
+          <path d="M458 62 L458 250" stroke="#592A22" stroke-dasharray="6 4"/>
+          <path d="M506 62 L506 250" stroke="#592A22" stroke-dasharray="6 4"/>
+          <rect x="680" y="52" width="176" height="70" rx="10" transform="rotate(-0.6 768 87)" fill="#FFFFFF"/>
+          <rect x="680" y="134" width="176" height="62" rx="10" transform="rotate(0.5 768 165)" fill="#F8EEEB"/>
+          <rect x="680" y="208" width="176" height="62" rx="10" transform="rotate(-0.4 768 239)" fill="#FFFFFF"/>
+          <rect x="830" y="62" width="20" height="18" rx="3" fill="#FFFFFF"/>
+          <path d="M830 68 L850 68" stroke-width="1.5"/>
+          <path d="M835 58 L835 64 M845 58 L845 64" stroke-width="1.5"/>
+        </g>
+
+        <text class="s5cL" x="98" y="200" text-anchor="middle">17</text>
+        <text class="s5cL" x="146" y="208" text-anchor="middle">14</text>
+        <text class="s5cL" x="194" y="218" text-anchor="middle">10</text>
+        <text class="s5cL" x="242" y="231" text-anchor="middle">5</text>
+        <text class="s5cL" x="290" y="228" text-anchor="middle">6</text>
+        <text class="s5cL" x="338" y="226" text-anchor="middle">7</text>
+        <text class="s5cL" x="386" y="200" text-anchor="middle">17</text>
+        <text class="s5cL" x="434" y="182" text-anchor="middle">24</text>
+        <text class="s5cL" x="482" y="117" text-anchor="middle">49</text>
+        <text class="s5cH" x="530" y="70" text-anchor="middle">67</text>
+        <text class="s5cL" x="578" y="122" text-anchor="middle">47</text>
+        <text class="s5cL" x="626" y="148" text-anchor="middle">37</text>
+
+        <text class="s5cS" x="98" y="268" text-anchor="middle">Jan</text>
+        <text class="s5cS" x="146" y="268" text-anchor="middle">Feb</text>
+        <text class="s5cS" x="194" y="268" text-anchor="middle">Mar</text>
+        <text class="s5cS" x="242" y="268" text-anchor="middle">Apr</text>
+        <text class="s5cS" x="290" y="268" text-anchor="middle">May</text>
+        <text class="s5cS" x="338" y="268" text-anchor="middle">Jun</text>
+        <text class="s5cS" x="386" y="268" text-anchor="middle">Jul</text>
+        <text class="s5cS" x="434" y="268" text-anchor="middle">Aug</text>
+        <text class="s5cS" x="482" y="268" text-anchor="middle">Sep</text>
+        <text class="s5cS" x="530" y="268" text-anchor="middle">Oct</text>
+        <text class="s5cS" x="578" y="268" text-anchor="middle">Nov</text>
+        <text class="s5cS" x="626" y="268" text-anchor="middle">Dec</text>
+
+        <text class="s5cA" x="452" y="54" text-anchor="end">interest resumes 1 Sep 2023</text>
+        <text class="s5cA" x="512" y="48">payments resume Oct 2023</text>
+
+        <text class="s5cH" x="694" y="76">Student loan queue</text>
+        <text class="s5cS" x="694" y="94">quota sample: the shape</text>
+        <text class="s5cS" x="694" y="110">is real, the level is not</text>
+        <text class="s5cV" x="694" y="164">5 to 67</text>
+        <text class="s5cL" x="694" y="184">April to October</text>
+        <text class="s5cB" x="694" y="232">payment-loan theme</text>
+        <text class="s5cL" x="694" y="252">18 in Jun, 79 in Oct</text>
+
+        <text class="s5cN" x="30" y="298">Dates: FSA FY2024 Annual Report, p. 45. The rise coincides with them; a date match is not a cause.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - student loan complaints climb from 5 in April to 67 in October, right after interest and payments resumed; the timing coincides, it does not prove why</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Volume drift: count one queue by month<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Student loan complaints per month in the sample, January to December 2023: 17, 14, 10, 5, 6, 7, 17, 24, 49, 67, 47, 37. From 5 in April to 67 in October.</p>
+        <p>Read the level with care. The sample took a fixed quota of 300 student loan complaints for the year, drawn evenly from the queue's whole year, so the monthly <em>shape</em> follows the real data but the <em>level</em> is set by the quota, not by how many complaints CFPB received. "67 in October" is a share of a fixed draw, not a national count.</p>
+        <p>The US Department of Education's Federal Student Aid office records that "student loan interest would resume on September 1, 2023, and payments resumed in October 2023" (FY2024 Annual Report, p. 45). The two dashed lines in the figure sit exactly there.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Theme drift: 18 in June, 79 in October<span class="mini">1 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The [payment loan late student month account] theme from Part 2 (k 6, seed 1) counted by month: 35, 34, 35, 23, 21, 18, 32, 46, 64, 79, 61, 41. It more than quadruples from June to October. The theme was found without any queue labels, yet it rises with the student loan queue. That is what a theme watchlist is for: a group you can count every month, whether or not it matches a product line.</p>
+        <p>It is also why Part 2's warning matters here. With a different seed this theme might be split or merged, and the monthly line would change with it. Track a theme only after it has survived a seed check, or track a saved query whose definition cannot move.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>"Coincides with" is not "caused by"<span class="mini">1 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The rise lines up with the dates. It does not tell you why. Other things could move student loan complaints in the same months: servicer changes, news coverage, a campaign encouraging people to complain, a change in how CFPB categorised them. The data on this page cannot separate them. The defensible sentence is: "In this sample, student loan complaints rose from 5 in April to 67 in October, which coincides with the resumption of interest (1 September 2023) and payments (October 2023)." To say more, read the complaints themselves and name what they describe.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Label drift: when the categories rename themselves<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Text drifts, and so do the labels attached to it. In August 2023 the CFPB product "Credit card or prepaid card" stops and two new products, "Credit card" and "Prepaid card", begin; the same month "Credit reporting, credit repair services, or other personal consumer reports" becomes "Credit reporting or other personal consumer reports". The sample builder maps both old and new names to one queue, which is recorded on Ledgerly's corpus card in session 1.</p>
+        <p>Without that mapping, a monthly chart of "Credit card" complaints would show a category appearing from nothing in August, and a classifier trained on January's labels would have no answer for "Prepaid card". Check the label list every time you refresh the data, and keep the mapping next to the watchlist.</p>
+      </div>
+    </details>
+
+    <div class="callout example">
+      <p><span class="ex-pill">Real world</span> <strong>The spike that was a dropdown.</strong> A bank's complaints dashboard shows "fees" complaints doubling in one month and an incident review is opened. The cause was a change to the intake form: a new "fees and charges" option was added, and agents started choosing it instead of "other". Before you explain a monthly jump with the world, check whether the way the data is recorded changed that month.</p>
+    </div>
+  </section>
+
+  <section class="section" id="demo-1">
+    <div class="section-kicker">
+      <span class="klabel">Build-along</span>
+      <h2>Ledgerly's theme watchlist</h2>
+      <span class="tag demo">★ 22 min · everyone builds</span>
+    </div>
+    <p class="lede">A watchlist turns search and themes into a routine: a few saved queries or checked themes, counted every month, each with a written threshold and a person who acts when it is crossed. You will test the search setup, test the themes, rebuild both in Python and write page 5 of the playbook (Constructed Ledgerly example; the complaints are real).</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 292" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Four boxes in a row. 1, query or theme: a saved BM25 query or a seed-checked theme. 2, monthly count: matches per month. 3, threshold, highlighted: a written trigger. 4, owner alert: a named person acts. Examples under each: student loan terms; 67 in October; 2 times the trailing median; student loan lead. A loop returns from the alert to the start: every quarter re-run the seeds, re-read the label list, and check the term is still in the index. Constructed Ledgerly example.">
+        <defs>
+          <filter id="s5dSk" x="-3%" y="-3%" width="106%" height="106%"><feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="69" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.4" xChannelSelector="R" yChannelSelector="G"/></filter>
+          <pattern id="s5dHc" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(-38)"><line x1="0" y1="0" x2="0" y2="7" stroke="#592A22" stroke-width="1" opacity=".5"/></pattern>
+          <marker id="s5dAr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M1 1 L9 5 L1 9" fill="none" stroke="#2B1C18" stroke-width="1.6" stroke-linecap="round"/></marker>
+        </defs>
+        <style>
+          .s5dH { font: 800 12px Inter, sans-serif; fill: #2B1C18; }
+          .s5dL { font: 600 12px Inter, sans-serif; fill: #2B1C18; }
+          .s5dS { font: 400 11px Inter, sans-serif; fill: #5E4A44; }
+          .s5dB { font: 800 11px Inter, sans-serif; fill: #1E4566; }
+          .s5dA { font: 700 11px Inter, sans-serif; fill: #592A22; }
+          .s5dN { font: 400 12px Inter, sans-serif; fill: #5E4A44; }
+        </style>
+
+        <text class="s5dH" x="30" y="26">A THEME WATCHLIST, AS A MECHANISM</text>
+        <text class="s5dS" x="300" y="26">Constructed Ledgerly example</text>
+
+        <g filter="url(#s5dSk)" fill="none" stroke="#2B1C18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="24" y="48" width="184" height="78" rx="10" transform="rotate(-0.7 116 87)" fill="#FFFFFF"/>
+          <rect x="240" y="48" width="184" height="78" rx="10" transform="rotate(0.6 332 87)" fill="#F8EEEB"/>
+          <rect x="456" y="48" width="184" height="78" rx="10" transform="rotate(-0.5 548 87)" fill="#A9C8E3"/>
+          <rect x="672" y="48" width="184" height="78" rx="10" transform="rotate(0.7 764 87)" fill="#FFFFFF"/>
+          <path d="M210 87 L236 87" marker-end="url(#s5dAr)"/>
+          <path d="M426 87 L452 87" marker-end="url(#s5dAr)"/>
+          <path d="M642 87 L668 87" marker-end="url(#s5dAr)"/>
+          <rect x="30" y="140" width="172" height="30" rx="15" fill="#F8EEEB"/>
+          <rect x="246" y="140" width="172" height="30" rx="15" fill="#F8EEEB"/>
+          <rect x="462" y="140" width="172" height="30" rx="15" fill="#F8EEEB"/>
+          <rect x="678" y="140" width="172" height="30" rx="15" fill="#F8EEEB"/>
+          <path d="M764 172 L764 204 L116 204 L116 178" marker-end="url(#s5dAr)"/>
+          <path d="M836 22 C 836 14, 852 14, 852 22 L854 32 L834 32 Z" fill="#FFFFFF" stroke-width="1.5"/>
+          <path d="M842 36 L846 36" stroke-width="1.5"/>
+        </g>
+
+        <text class="s5dH" x="40" y="76">1 · Query or theme</text>
+        <text class="s5dS" x="40" y="96">a saved BM25 query, or</text>
+        <text class="s5dS" x="40" y="112">a seed-checked theme</text>
+        <text class="s5dH" x="256" y="76">2 · Monthly count</text>
+        <text class="s5dS" x="256" y="96">matches per month,</text>
+        <text class="s5dS" x="256" y="112">same index every time</text>
+        <text class="s5dH" x="472" y="76">3 · Threshold</text>
+        <text class="s5dL" x="472" y="96">a written trigger,</text>
+        <text class="s5dL" x="472" y="112">set before you look</text>
+        <text class="s5dH" x="688" y="76">4 · Owner alert</text>
+        <text class="s5dS" x="688" y="96">a named person reads</text>
+        <text class="s5dS" x="688" y="112">the complaints and acts</text>
+
+        <text class="s5dL" x="116" y="160" text-anchor="middle">student loan terms</text>
+        <text class="s5dL" x="332" y="160" text-anchor="middle">Oct: 67 in the sample</text>
+        <text class="s5dL" x="548" y="160" text-anchor="middle">2x trailing median</text>
+        <text class="s5dL" x="764" y="160" text-anchor="middle">student loan lead</text>
+
+        <text class="s5dA" x="140" y="228">every quarter: re-run three seeds, re-read the label list, check the term is still in the index</text>
+
+        <text class="s5dN" x="30" y="264">Thresholds and owners are choices, not findings. The 67 is real; the 2x rule is constructed.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - a watchlist is four written decisions in a loop: what to count, how to count it, when to act, and who acts</figcaption>
+    </figure>
+
+    <div class="steps">
+      <div class="step">
+        <p><strong>Compare the two rankings on one query.</strong> The widget indexes all 3,000 complaints. Read BM25's top five for "late fee refund", then switch to TF-IDF cosine and read again: 274 matches either way, a different order. Drag k1 to 0 and watch BM25 turn binary (the top five becomes 7668748, 6594476, 6608852, 6645804, 7142738), then put it back to 1.2. Drag b to 0 and to 1: positions 4 and 5 change.</p>
+        <div class="prompt-box good"><span class="label">★ Step 1 · what to note for each query</span>matches: how many complaints contain at least one query word
+top 5 under BM25 vs top 5 under cosine: how many ids are shared?
+which query words survived normalising (and which vanished)
+does moving k1 or b change what a handler would read first?</div>
+        <div class="ntx-mount" data-ntx="search" data-q="late fee refund"></div>
+      </div>
+
+      <div class="step">
+        <p><strong>Find the template.</strong> Type "identity theft inquiry" into the same search box. 284 complaints match, and the top five under both rankings share their opening words and a tied BM25 score of 11.825. Read the snippets. Then try "zelle scam" and see which query word the widget says survived.</p>
+        <div class="prompt-box good"><span class="label">★ Step 2 · what a tie at the top tells you</span>five different complaint ids, identical first words, identical score
+= one letter template, sent many times
+for search: deduplicate before counting, or the template dominates the top
+for the bench: copies can sit in train and test at once (session 4)</div>
+      </div>
+
+      <div class="step">
+        <p><strong>Move the seed.</strong> The themes widget starts at seed 1, k 6. Read the six theme cards and their month bars. Click seed 2, then seed 3, and read the agreement line each time (0.546, then 0.496). Then try k 8 with seed 1, and look for the student loan theme with "mohela" in it.</p>
+        <div class="prompt-box good"><span class="label">★ Step 3 · the seed check</span>For each theme you would put on a slide:
+  does a theme with the same top words exist under seeds 2 and 3?
+  what is the pair agreement at this k?
+  is its month line the same shape under each seed?
+If no: call it "one grouping", not "the theme".</div>
+        <div class="ntx-mount" data-ntx="themes"></div>
+      </div>
+
+      <div class="step">
+        <p><strong>Rebuild it in Python.</strong> This runs on the 2023 rows of the shard from session 1. It draws a plain random sample rather than the bench's quota sample, uses scikit-learn's ordinary (Euclidean) k-means on length-normalised TF-IDF rows, which behaves close to spherical k-means, and measures agreement with the adjusted Rand index, a different scale from the widget's pair agreement. Expect different themes and different values; the instability is the thing to reproduce.</p>
+        <div class="prompt-box good"><span class="label">★ Step 4 · Python, run locally (pandas + scikit-learn)</span>import pandas as pd
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.cluster import KMeans
+from sklearn.metrics import adjusted_rand_score
+
+df = pd.read_parquet("cfpb_shard0.parquet",
+                     columns=["Date received", "Product", "Consumer complaint narrative"])
+df = df[df["Date received"].str[:4] == "2023"].sample(3000, random_state=2023)
+text = (df["Consumer complaint narrative"].str.lower()
+          .str.replace(r"x{2,}", " ", regex=True))        # drop redaction marks
+
+X = TfidfVectorizer(stop_words="english", min_df=5).fit_transform(text)   # rows have length 1
+runs = {s: KMeans(n_clusters=6, random_state=s, n_init=1).fit_predict(X) for s in (1, 2, 3)}
+print(adjusted_rand_score(runs[1], runs[2]), adjusted_rand_score(runs[1], runs[3]))
+# your numbers will be close, not identical
+
+month = df["Date received"].str[:7]                       # "2023-01" ... "2023-12"
+has_term = text.str.contains(r"\bstudent\b")
+print(has_term.groupby(month).sum())                       # complaints per month containing the term
+# your numbers will be close, not identical</div>
+      </div>
+
+      <div class="step">
+        <p><strong>Write page 5 of the playbook.</strong> Paste the block below as page 5 of Ledgerly's text playbook, then replace the thresholds and owners with ones your team would actually act on. Thresholds are set before you look at next month, not after.</p>
+        <div class="prompt-box good"><span class="label">★ Step 5 · Ledgerly text playbook, page 5: search setup and theme watchlist (Constructed Ledgerly example)</span>SEARCH SETUP
+Index: all complaints, first 50 words, stop words and xxxx out, light stemmer (see page 1).
+Ranking: BM25, k1 1.2, b 0.75, Lucene idf. Cosine on TF-IDF kept as a second opinion.
+Why these values: defaults disagree (IIR: k1 1.2 to 2, b 0.75; Robertson and Zaragoza:
+  b 0.5 with k1 2 is common). Change only after checking 20 queries with known answers.
+Known gaps: "zelle" is not in the index (50-word cut). Templates tie at the top
+  ("identity theft inquiry": 5 copies at 11.825); deduplicate before counting.
+
+THEME WATCHLIST (thresholds and owners are choices, not findings)
+1. Theme [payment loan late student] (k 6, seed 1; agreement 0.546 with seed 2)
+   Alert: a month above 2x its trailing 6-month median.  Owner: student loan lead.
+2. Query "identity theft inquiry"
+   Alert: 10+ complaints with identical opening words in one month.  Owner: credit reporting lead.
+3. Query "repossessed my car"
+   Alert: a month up 50% on the previous month.  Owner: auto lending lead.
+4. Term "zelle" (needs a full-text index first; the 50-word index cannot see it)
+   Alert: any month above 5 complaints.  Owner: deposits lead.
+
+ROUTINE
+Monthly: count every item on the same index; read 10 complaints behind any alert.
+Quarterly: re-run themes with seeds 1, 2, 3; record the agreement; re-read the product list
+  (Aug 2023 renames mapped on page 1). A rise "coincides with" a date; it is not a cause.
+Owner: ____________   Date: ____________</div>
+      </div>
+    </div>
+
+    <div class="callout tip">
+      <p><strong>A watchlist item without an owner is a chart nobody reads.</strong> The threshold and the name matter more than the method behind the count. A saved BM25 query with a named owner will catch a rising issue sooner than a beautiful theme map that nobody is responsible for opening.</p>
+    </div>
+  </section>
+
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Before session 6</h2>
+      <span class="tag exercise">30 min</span>
+    </div>
+    <ol>
+      <li><strong>Write five queries with known answers</strong> for a text pile you own, and note the three items each should return first. Run them with BM25 at k1 1.2 and at k1 2, and count how many of your known answers land in the top five each time.</li>
+      <li><strong>Hunt for templates.</strong> Search your own text for a phrase that sounds like a form letter ("please remove", "I am writing to dispute"). Count how many documents share their first ten words, and decide whether your monthly counts should include the copies.</li>
+      <li><strong>Transfer task: code 50 open-text survey answers into themes.</strong> Take 50 answers to one open question, run k-means with two seeds at the same k, and write down which themes survived both runs and which did not. If you also design the questionnaire, the question wording side lives in <a href="https://phoebefu6.github.io/learn-survey-design-with-phoebe/">Survey Design</a>; here you only code the answers.</li>
+      <li><strong>Find one rise and write the honest sentence.</strong> Pick a monthly count in your own data that jumped, find any dated event near it, and write it up with "coincides with", plus one other explanation you have not ruled out and whether the recording changed that month.</li>
+    </ol>
+  </section>
+
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions</h2>
+    </div>
+    <p>Clear all three and session 5 gets stamped in your passport.</p>
+
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">1 · In BM25, what does the parameter b control?</p>
+      <button class="qopt" type="button">A · How much rare words count compared with common ones</button>
+      <button class="qopt" type="button">B · How strongly a complaint's length, relative to the average, discounts its term counts</button>
+      <button class="qopt" type="button">C · How many results the search returns</button>
+      <button class="qopt" type="button">D · Whether stop words are removed from the query</button>
+      <p class="qwhy">b scales length normalisation: b = 1 is full normalisation by length, b = 0 ignores length. Rarity is the idf's job and saturation of repeats is k1's. IIR suggests b = 0.75; Robertson and Zaragoza report b = 0.5 as a common choice, so write down which you used.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="3">
+      <p class="qtext">2 · Seed 1 and seed 2 at k 6 have a pair agreement of 0.546. What does that tell you?</p>
+      <button class="qopt" type="button">A · The themes are 54.6% accurate</button>
+      <button class="qopt" type="button">B · Seed 1 is the better seed and should be kept</button>
+      <button class="qopt" type="button">C · 54.6% of complaints changed theme</button>
+      <button class="qopt" type="button">D · Of the complaint pairs either run grouped together, only about half were grouped together by both, so a theme is one view of the data and needs a seed check before it is named</button>
+      <p class="qwhy">Pair agreement counts pairs together in both runs over pairs together in either. There is no ground truth for themes, so it is not accuracy, and fixing seed 1 only hides the instability. No setting on the bench gets near 1 (0.355 to 0.546).</p>
+    </div>
+
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">3 · Student loan complaints in the sample rose from 5 in April to 67 in October, right after interest and payments resumed. Why is that not evidence that the resumption caused the rise?</p>
+      <button class="qopt" type="button">A · A date match fits several explanations the counts cannot separate, and the sample's monthly level is set by a quota, so the data shows timing, not cause</button>
+      <button class="qopt" type="button">B · Because 67 is too small a number to mean anything</button>
+      <button class="qopt" type="button">C · Because k-means found the theme, not a classifier</button>
+      <button class="qopt" type="button">D · Because the FSA report is not a reliable source</button>
+      <p class="qwhy">The FSA dates are read at source and the shape of the rise is real. What the counts cannot do is rule out other changes in the same months, including changes in how complaints were recorded. "Coincides with" is the honest verb; reading the complaints is how you learn more.</p>
+    </div>
+
+    <p class="quiz-score"></p>
+  </section>
+
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Sources covered</span>
+      <h2>What this session teaches, and where it came from</h2>
+    </div>
+    <div class="covered">
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">BM25, k1 and b</span><span class="note">Manning, Raghavan and Schutze (2008), Introduction to Information Retrieval, Cambridge UP; k1 between 1.2 and 2, b = 0.75, k1 = 0 binary; read at source</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Disagreeing defaults</span><span class="note">Robertson and Zaragoza (2009), Foundations and Trends in IR 3(4): 333-389; b = 0.5 and k1 = 2 common, experiments suggest lower k1 and higher b; read at source</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Cosine similarity</span><span class="note">Jurafsky and Martin (2026 draft), Speech and Language Processing, 3rd ed., ch 5; read at source</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">NMF</span><span class="note">Lee and Seung (1999), Nature 401: 788-791; described, not run on the bench</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">LDA</span><span class="note">Blei, Ng and Jordan (2003), JMLR 3: 993-1022; described, not run on the bench</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Student loan dates</span><span class="note">Federal Student Aid, FY2024 Annual Report, p. 45: interest resumed 1 September 2023, payments resumed October 2023; read at source</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">BM25 for retrieval</span><span class="note">Linked, not retaught: Ship an Internal AI Assistant, b2 (clause retrieval) and RAG, b4 (retrieval for an LLM)</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Every number on this page</span><span class="note">Computed by the bench on the shipped sample (search, themes, agreement, monthly counts); a plain-Python reference run gives the same values; the saturation curve is computed from the formula</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Ledgerly</span><span class="note">Constructed example; the complaints are real, the team, thresholds and owners are fictional</span></div>
+    </div>
+    <p class="mono" style="margin-top:14px">Every fact on this page, and its verification tier, is recorded in the course's source map.</p>
+  </section>
+
+  <section class="cheat" id="cheatsheet">
+    <h3>Session 5 cheat sheet <span>· pin this</span></h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>BM25 has three dials</b><span>idf for rarity, k1 for how fast repeats saturate (k1 = 0 is binary), b for length. Write down the values you chose.</span></div>
+      <div class="cheat-item"><b>Defaults disagree</b><span>IIR: k1 1.2 to 2, b 0.75. Robertson and Zaragoza: b 0.5, k1 2 common. Tune on queries with known answers.</span></div>
+      <div class="cheat-item"><b>The index decides what exists</b><span>"zelle" is invisible in a 50-word index. Say what text went in before quoting any search count.</span></div>
+      <div class="cheat-item"><b>Ties at the top mean templates</b><span>Five copies tied at 11.825. Deduplicate before you count, and before you split train and test.</span></div>
+      <div class="cheat-item"><b>Seed-check every theme</b><span>Three seeds, same k, report the agreement (0.546 here). One run is one view, not a finding.</span></div>
+      <div class="cheat-item"><b>Drift: coincides, never caused</b><span>Count by month on a fixed definition, check whether the labels or the recording changed, then read the complaints.</span></div>
+    </div>
+  </section>
+
+  <div class="callout next">
+    <span class="nx-pill">Next session</span>
+    <p>You can now count, route, search and watch complaints with tools that cost almost nothing and give the same answer twice. Session 6 asks when a large language model earns its place anyway: cost per thousand, latency, audit, reproducibility and the published evidence that disagrees, ending in Ledgerly's signed build-or-buy note.</p>
+  </div>
+
+  <footer class="pagefoot">
+    <span>Session 5 of 6 · learn-nlp-text-analytics-with-phoebe · by Phoebe Fu &nbsp;·&nbsp; 📚 <a href="https://phoebefu6.github.io/learn-with-phoebe/">Learn with Phoebe ↗</a></span>
+    <span><a href="04-the-text-bench.html">← Prev: The text bench</a> &nbsp;·&nbsp; <a href="06-when-the-big-model-earns-its-place.html">Next: When the big model earns its place →</a></span>
+  </footer>
+
+</main>
+
+<script src="../assets/ntx-sample.js?v=2"></script>
+<script src="../assets/ntx-live.js?v=2"></script>
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

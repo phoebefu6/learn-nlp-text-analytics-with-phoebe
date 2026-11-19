@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- social:start -->
+<meta name="description" content="Session 3 of 6. Naive Bayes and logistic regression on 3,000 real CFPB complaints: route each one to one of six queues, read the weights the model learned, and turn precision, recall and the confusion table into a routing cost.">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Learn with Phoebe">
+<meta property="og:title" content="Route it: a classifier you can read - learn NLP and text analytics with phoebe">
+<meta property="og:description" content="Session 3 of 6. Naive Bayes vs logistic regression on real complaint text, the weights they learn, and the error table that says where complaints leak.">
+<meta property="og:url" content="https://phoebefu6.github.io/learn-nlp-text-analytics-with-phoebe/courses/03-route-it.html">
+<meta property="og:image" content="https://phoebefu6.github.io/learn-nlp-text-analytics-with-phoebe/assets/og-cover.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Route it: a classifier you can read - learn NLP and text analytics with phoebe">
+<meta name="twitter:description" content="Session 3 of 6. Naive Bayes vs logistic regression on real complaint text, and the error table that says where complaints leak.">
+<meta name="twitter:image" content="https://phoebefu6.github.io/learn-nlp-text-analytics-with-phoebe/assets/og-cover.png">
+<!-- social:end -->
+<title>Session 3 · Route it: a classifier you can read - learn NLP and text analytics with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=2">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-nlp-text-analytics-with-phoebe</a> / Session 3 of 6</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn NLP &amp; Text Analytics with Phoebe · Session 3 of 6</div>
+    <h1>Route it: <span class="accent">a classifier you can read</span></h1>
+    <p class="sub">The table is built and the cells are weighted. Now a model has to decide, for every complaint, which of six queues should open it. Tonight we train two classifiers you can take apart with a pencil, read the words each one leans on, and turn their mistakes into the thing a complaints manager actually cares about: which complaints end up on the wrong desk, and how many.</p>
+    <div class="chip-row">
+      <span class="chip level">🟡 Core</span>
+      <span class="chip audience">Analysts and data scientists handed a pile of free text</span>
+      <span class="chip audience">Light Python, everything also runs in the page</span>
+      <span class="chip time">45 min</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Welcome</span>
+      <span class="a2" style="flex:4">3-18 · Naive Bayes, logistic, errors</span>
+      <span class="a3" style="flex:5">18-40 · Build-along: the routing classifier</span>
+      <span class="a4" style="flex:1">40-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>Where we start</h2>
+    </div>
+    <p class="lede">Ledgerly's complaints team (Constructed Ledgerly example) has a playbook with two pages: a corpus card and a weighting choice. Page 3 is the first one with a model on it. The job is routing: 3,000 real CFPB complaints from 2023, 2,400 to learn from and 600 held back, each to be sent to credit reporting, debt collection, credit card, checking or savings, student loan, or vehicle loan or lease. We use two classic models because both can be read: naive Bayes, which multiplies a prior by word evidence, and logistic regression, which learns one weight per word per queue. Then we stop asking "how accurate?" and start asking "where do the misroutes go?".</p>
+
+    <div class="legend">
+      <span class="pill">🎫 Clear all three quiz questions to stamp your passport</span>
+      <span class="pill">Live = presented in the 45 minutes</span>
+      <span class="pill">Self-study = the full depth, after class</span>
+      <span class="pill">★ Build-along = do it yourself, in the page</span>
+    </div>
+
+    <div class="callout win">
+      <p><strong>★ What you walk out with tonight.</strong> Page 3 of Ledgerly's text playbook: which routing classifier the team chose and why, its per-queue error table (precision, recall, the biggest leak from each queue), and the two misroutes that cost the most, each with a named owner. Plus the habit of reading a model's heaviest words before trusting its accuracy.</p>
+    </div>
+  </section>
+
+  <section class="section" id="part-1">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers the multinomial naive Bayes rung on text</span>
+      <h2>Naive Bayes: priors times word evidence</h2>
+      <span class="tag concept">5 min live</span>
+    </div>
+    <p class="lede">Naive Bayes asks a simple question for each queue: how common is this queue to begin with, and how typical is each word of this complaint for complaints in this queue? Multiply the answers, compare across the six queues, route to the biggest. It is old, fast and transparent, and on Ledgerly's complaints it gets 0.762 of the held-out rows right.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 336" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="How naive Bayes scores one short illustrative complaint, my car was repossessed after one late payment. Column 1, the prior for each queue from the training rows: credit reporting 0.30, debt collection 0.20, credit card 0.15, checking or savings 0.15, student loan 0.10, vehicle loan 0.10. Column 2, how common each of four words is in each queue's training rows, drawn as dots: car and repossessed are big only for vehicle loan; late and payment are medium for several queues. Column 3, the prior and the word evidence added in log space: vehicle loan has the longest bar and wins despite the smallest prior. Dots and score bars are illustrative, not computed.">
+        <defs>
+          <filter id="s3aSk" x="-3%" y="-3%" width="106%" height="106%"><feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="31" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.4" xChannelSelector="R" yChannelSelector="G"/></filter>
+          <pattern id="s3aHc" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(-38)"><line x1="0" y1="0" x2="0" y2="7" stroke="#592A22" stroke-width="1" opacity=".5"/></pattern>
+          <marker id="s3aAr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M1 1 L9 5 L1 9" fill="none" stroke="#2B1C18" stroke-width="1.6" stroke-linecap="round"/></marker>
+        </defs>
+        <style>
+          .s3aH { font: 800 12px Inter, sans-serif; fill: #2B1C18; }
+          .s3aL { font: 600 12px Inter, sans-serif; fill: #2B1C18; }
+          .s3aS { font: 400 11px Inter, sans-serif; fill: #5E4A44; }
+          .s3aB { font: 800 11px Inter, sans-serif; fill: #1E4566; }
+          .s3aA { font: 700 11px Inter, sans-serif; fill: #592A22; }
+          .s3aN { font: 400 12px Inter, sans-serif; fill: #5E4A44; }
+        </style>
+
+        <text class="s3aH" x="24" y="26">SCORING ONE SHORT COMPLAINT, QUEUE BY QUEUE</text>
+        <text class="s3aS" x="24" y="44">illustrative complaint: "my car was repossessed after one late payment"</text>
+
+        <text class="s3aA" x="24" y="70">1 · Prior P(queue)</text>
+        <text class="s3aA" x="340" y="70">2 · P(word | queue), per word</text>
+        <text class="s3aA" x="640" y="70">3 · Add the logs, pick the top</text>
+
+        <g filter="url(#s3aSk)" fill="none" stroke="#2B1C18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M290 66 L328 66" marker-end="url(#s3aAr)"/>
+          <path d="M594 66 L630 66" marker-end="url(#s3aAr)"/>
+          <rect x="150" y="84" width="120" height="16" rx="4" fill="url(#s3aHc)"/>
+          <rect x="150" y="114" width="80" height="16" rx="4" fill="url(#s3aHc)"/>
+          <rect x="150" y="144" width="60" height="16" rx="4" fill="url(#s3aHc)"/>
+          <rect x="150" y="174" width="60" height="16" rx="4" fill="url(#s3aHc)"/>
+          <rect x="150" y="204" width="40" height="16" rx="4" fill="url(#s3aHc)"/>
+          <rect x="150" y="234" width="40" height="16" rx="4" fill="url(#s3aHc)"/>
+          <circle cx="350" cy="92" r="2" fill="#592A22"/><circle cx="425" cy="92" r="2" fill="#592A22"/><circle cx="500" cy="92" r="4" fill="#592A22"/><circle cx="570" cy="92" r="5" fill="#592A22"/>
+          <circle cx="350" cy="122" r="3" fill="#592A22"/><circle cx="425" cy="122" r="3" fill="#592A22"/><circle cx="500" cy="122" r="5" fill="#592A22"/><circle cx="570" cy="122" r="6" fill="#592A22"/>
+          <circle cx="350" cy="152" r="2" fill="#592A22"/><circle cx="425" cy="152" r="2" fill="#592A22"/><circle cx="500" cy="152" r="7" fill="#592A22"/><circle cx="570" cy="152" r="7" fill="#592A22"/>
+          <circle cx="350" cy="182" r="2" fill="#592A22"/><circle cx="425" cy="182" r="2" fill="#592A22"/><circle cx="500" cy="182" r="4" fill="#592A22"/><circle cx="570" cy="182" r="5" fill="#592A22"/>
+          <circle cx="350" cy="212" r="2" fill="#592A22"/><circle cx="425" cy="212" r="2" fill="#592A22"/><circle cx="500" cy="212" r="7" fill="#592A22"/><circle cx="570" cy="212" r="8" fill="#592A22"/>
+          <circle cx="350" cy="242" r="9" fill="#592A22"/><circle cx="425" cy="242" r="9" fill="#592A22"/><circle cx="500" cy="242" r="6" fill="#592A22"/><circle cx="570" cy="242" r="8" fill="#592A22"/>
+          <rect x="640" y="84" width="70" height="16" rx="4" transform="rotate(-0.6 675 92)" fill="#F8EEEB"/>
+          <rect x="640" y="114" width="85" height="16" rx="4" transform="rotate(0.5 682 122)" fill="#F8EEEB"/>
+          <rect x="640" y="144" width="95" height="16" rx="4" transform="rotate(-0.4 687 152)" fill="#F8EEEB"/>
+          <rect x="640" y="174" width="60" height="16" rx="4" transform="rotate(0.6 670 182)" fill="#F8EEEB"/>
+          <rect x="640" y="204" width="100" height="16" rx="4" transform="rotate(-0.5 690 212)" fill="#F8EEEB"/>
+          <rect x="640" y="234" width="172" height="16" rx="4" transform="rotate(0.4 726 242)" fill="#A9C8E3"/>
+        </g>
+
+        <text class="s3aL" x="24" y="96">Credit reporting</text>
+        <text class="s3aL" x="24" y="126">Debt collection</text>
+        <text class="s3aL" x="24" y="156">Credit card</text>
+        <text class="s3aL" x="24" y="186">Checking/savings</text>
+        <text class="s3aL" x="24" y="216">Student loan</text>
+        <text class="s3aL" x="24" y="246">Vehicle loan</text>
+        <text class="s3aS" x="278" y="96">0.30</text>
+        <text class="s3aS" x="238" y="126">0.20</text>
+        <text class="s3aS" x="218" y="156">0.15</text>
+        <text class="s3aS" x="218" y="186">0.15</text>
+        <text class="s3aS" x="198" y="216">0.10</text>
+        <text class="s3aS" x="198" y="246">0.10</text>
+
+        <text class="s3aS" x="350" y="276" text-anchor="middle">car</text>
+        <text class="s3aS" x="425" y="276" text-anchor="middle">repossessed</text>
+        <text class="s3aS" x="500" y="276" text-anchor="middle">late</text>
+        <text class="s3aS" x="570" y="276" text-anchor="middle">payment</text>
+
+        <text class="s3aB" x="820" y="246">wins</text>
+
+        <text class="s3aN" x="24" y="304">Illustrative, not computed: dot sizes and score bars show the mechanism, not bench output. The priors</text>
+        <text class="s3aN" x="24" y="322">are real: 720 / 480 / 360 / 360 / 240 / 240 of 2,400 training rows. Two strong words beat the smallest prior.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - naive Bayes starts from how common each queue is, then lets every word vote; in log space the votes simply add up</figcaption>
+    </figure>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>Prior times word evidence, added in log space<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p><strong>The prior</strong> is how common each queue is before you read a word. Ledgerly's 2,400 training rows split 720 / 480 / 360 / 360 / 240 / 240, so the priors are 0.30 for credit reporting, 0.20 for debt collection, 0.15 each for credit card and checking or savings, and 0.10 each for student loan and vehicle loan.</p>
+        <p><strong>The word evidence</strong> is, for each word in the complaint, how often that word appears in the training complaints of that queue, as a share of all the words in that queue. "Repossessed" is common in vehicle loan complaints and rare everywhere else.</p>
+        <p><strong>The score</strong> for a queue is the prior times the evidence of every word. Fifty small probabilities multiplied together underflow a computer, so every implementation adds logarithms instead: log prior plus the sum of log word likelihoods. The queue with the highest sum wins. That is the whole classifier: one table of word counts per queue and an addition.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Add-one smoothing: one unseen word must not veto a queue<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Suppose "zelle" never appeared in any training complaint about checking accounts. Its estimated likelihood for that queue is then zero, and zero times anything is zero: one word would rule out the whole queue, however strong the rest of the evidence. Jurafsky and Martin's fix is add-one (Laplace) smoothing, Equation 4.14 in chapter 4 of the 2024 draft of Speech and Language Processing: add 1 to every word's count in every queue, and add the vocabulary size to the denominator so the shares still sum to one.</p>
+        <p>In scikit-learn the same knob is <code>alpha</code> on <code>MultinomialNB</code>, and its default is 1.0: add-one. The bench's R2 rung uses alpha 1. Session 4's validation grid also tries alpha 0.3; on Ledgerly's rows it did not beat alpha 1.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Why it works despite a false assumption<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Multiplying word likelihoods is only correct if every word is independent of every other word once you know the queue. That conditional independence assumption is plainly false for complaints: "credit" and "report" travel together, so naive Bayes counts the same evidence twice and its probabilities come out overconfident.</p>
+        <p>Routing does not need calibrated probabilities. It needs the right queue to have the highest score, and double counting tends to push all queues' scores in the same direction. On Ledgerly's holdout, R2 (word counts plus naive Bayes) gets 457 of 600 right, 0.762, against 0.300 for always guessing credit reporting.</p>
+        <p>One warning from the bench: feed naive Bayes TF-IDF weights instead of counts (R3) and accuracy falls to 0.608. The l2-normalised weights are all below 1, so the word evidence shrinks and the prior dominates: 175 of 180 credit reporting complaints are right, while vehicle loan recall collapses to 0.283. A better weighting is not better for every model.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Where the derivation lives<span class="mini">1 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Bayes' rule, why the denominator can be dropped, and naive Bayes as a general method for any features are derived step by step in <a href="https://phoebefu6.github.io/learn-classification-regression-with-phoebe/courses/c6-naive-bayes.html">Classification &amp; Regression, c6: naive Bayes</a>. Here it is one rung on a text ladder: what it needs (counts, not weights), what it gets on real complaints, and how to read it.</p>
+      </div>
+    </details>
+
+    <div class="callout example">
+      <p><span class="ex-pill">Real world</span> <strong>The baseline that stayed in production.</strong> A support team needs ticket triage by Monday. Someone trains naive Bayes on last quarter's labelled tickets in an afternoon as "a baseline until the real model arrives". Two years later it is still running, because it retrains in seconds, anyone can print the words behind a decision, and the fancier candidate never beat it by enough to justify the extra machinery. Start with the model you can explain; make the next one earn its place against it.</p>
+    </div>
+  </section>
+
+  <section class="section" id="part-2">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers softmax over six queues, learned weights, and reading them</span>
+      <h2>Logistic regression: one weight per word per queue</h2>
+      <span class="tag concept">5 min live</span>
+    </div>
+    <p class="lede">Naive Bayes estimates its numbers by counting. Logistic regression learns its numbers by trying, being wrong, and adjusting: one weight for every word in every queue, pushed up when the word helps pick the right queue and down when it misleads. The result is a table you can read, and reading it is where you find out what the model actually learned.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 470" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The six heaviest learned weights per queue for the R4 logistic model, four queues, same scale. Debt collection: debt 8.96, collection 6.35, company 3.26, a_debt 3.21, collections 3.05, report 2.66, highlighted. Credit card: card 11.08, credit_card 6.68, for 2.74, credit 2.70, late 2.42, case 2.23. Credit reporting: report 4.40, credit 4.12, experian 3.53, bureaus 3.44, these 3.33, credit_bureaus 2.95. Student loan: loans 7.32, loan 6.85, mohela 6.59, student 5.21, nelnet 4.47, aidvantage 3.71. Company names experian, mohela, nelnet and aidvantage are marked.">
+        <defs>
+          <filter id="s3bSk" x="-3%" y="-3%" width="106%" height="106%"><feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="37" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.4" xChannelSelector="R" yChannelSelector="G"/></filter>
+          <pattern id="s3bHc" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(-38)"><line x1="0" y1="0" x2="0" y2="7" stroke="#592A22" stroke-width="1" opacity=".5"/></pattern>
+          <marker id="s3bAr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M1 1 L9 5 L1 9" fill="none" stroke="#2B1C18" stroke-width="1.6" stroke-linecap="round"/></marker>
+        </defs>
+        <style>
+          .s3bH { font: 800 12px Inter, sans-serif; fill: #2B1C18; }
+          .s3bL { font: 600 12px Inter, sans-serif; fill: #2B1C18; }
+          .s3bS { font: 400 11px Inter, sans-serif; fill: #5E4A44; }
+          .s3bB { font: 800 11px Inter, sans-serif; fill: #1E4566; }
+          .s3bA { font: 700 11px Inter, sans-serif; fill: #592A22; }
+          .s3bN { font: 400 12px Inter, sans-serif; fill: #5E4A44; }
+        </style>
+
+        <text class="s3bH" x="24" y="26">WHAT THE LOGISTIC MODEL LEARNED: SIX HEAVIEST WORDS, FOUR QUEUES</text>
+
+        <g filter="url(#s3bSk)" fill="none" stroke="#2B1C18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="24" y="46" width="408" height="170" rx="10" transform="rotate(-0.4 228 131)" fill="#FFFFFF"/>
+          <rect x="448" y="46" width="408" height="170" rx="10" transform="rotate(0.4 652 131)" fill="#FFFFFF"/>
+          <rect x="24" y="232" width="408" height="170" rx="10" transform="rotate(0.3 228 317)" fill="#FFFFFF"/>
+          <rect x="448" y="232" width="408" height="170" rx="10" transform="rotate(-0.3 652 317)" fill="#FFFFFF"/>
+
+          <rect x="148" y="84" width="179" height="14" rx="3" fill="url(#s3bHc)"/>
+          <rect x="148" y="106" width="127" height="14" rx="3" fill="url(#s3bHc)"/>
+          <rect x="148" y="128" width="65" height="14" rx="3" fill="url(#s3bHc)"/>
+          <rect x="148" y="150" width="64" height="14" rx="3" fill="url(#s3bHc)"/>
+          <rect x="148" y="172" width="61" height="14" rx="3" fill="url(#s3bHc)"/>
+          <rect x="148" y="194" width="53" height="14" rx="3" fill="#A9C8E3"/>
+
+          <rect x="572" y="84" width="222" height="14" rx="3" fill="url(#s3bHc)"/>
+          <rect x="572" y="106" width="134" height="14" rx="3" fill="url(#s3bHc)"/>
+          <rect x="572" y="128" width="55" height="14" rx="3" fill="url(#s3bHc)"/>
+          <rect x="572" y="150" width="54" height="14" rx="3" fill="url(#s3bHc)"/>
+          <rect x="572" y="172" width="48" height="14" rx="3" fill="url(#s3bHc)"/>
+          <rect x="572" y="194" width="45" height="14" rx="3" fill="url(#s3bHc)"/>
+
+          <rect x="148" y="270" width="88" height="14" rx="3" fill="url(#s3bHc)"/>
+          <rect x="148" y="292" width="82" height="14" rx="3" fill="url(#s3bHc)"/>
+          <rect x="148" y="314" width="71" height="14" rx="3" fill="#DDB8AD"/>
+          <rect x="148" y="336" width="69" height="14" rx="3" fill="url(#s3bHc)"/>
+          <rect x="148" y="358" width="67" height="14" rx="3" fill="url(#s3bHc)"/>
+          <rect x="148" y="380" width="59" height="14" rx="3" fill="url(#s3bHc)"/>
+
+          <rect x="572" y="270" width="146" height="14" rx="3" fill="url(#s3bHc)"/>
+          <rect x="572" y="292" width="137" height="14" rx="3" fill="url(#s3bHc)"/>
+          <rect x="572" y="314" width="132" height="14" rx="3" fill="#DDB8AD"/>
+          <rect x="572" y="336" width="104" height="14" rx="3" fill="url(#s3bHc)"/>
+          <rect x="572" y="358" width="89" height="14" rx="3" fill="#DDB8AD"/>
+          <rect x="572" y="380" width="74" height="14" rx="3" fill="#DDB8AD"/>
+
+          <rect x="30" y="418" width="22" height="14" rx="3" fill="url(#s3bHc)"/>
+          <rect x="190" y="418" width="22" height="14" rx="3" fill="#DDB8AD"/>
+          <rect x="420" y="418" width="22" height="14" rx="3" fill="#A9C8E3"/>
+        </g>
+
+        <text class="s3bH" x="38" y="68">Debt collection</text>
+        <text class="s3bL" x="38" y="96">debt</text><text class="s3bS" x="335" y="96">8.96</text>
+        <text class="s3bL" x="38" y="118">collection</text><text class="s3bS" x="283" y="118">6.35</text>
+        <text class="s3bL" x="38" y="140">company</text><text class="s3bS" x="221" y="140">3.26</text>
+        <text class="s3bL" x="38" y="162">a_debt</text><text class="s3bS" x="220" y="162">3.21</text>
+        <text class="s3bL" x="38" y="184">collections</text><text class="s3bS" x="217" y="184">3.05</text>
+        <text class="s3bL" x="38" y="206">report</text><text class="s3bB" x="209" y="206">2.66</text>
+
+        <text class="s3bH" x="462" y="68">Credit card</text>
+        <text class="s3bL" x="462" y="96">card</text><text class="s3bS" x="802" y="96">11.08</text>
+        <text class="s3bL" x="462" y="118">credit_card</text><text class="s3bS" x="714" y="118">6.68</text>
+        <text class="s3bL" x="462" y="140">for</text><text class="s3bS" x="635" y="140">2.74</text>
+        <text class="s3bL" x="462" y="162">credit</text><text class="s3bS" x="634" y="162">2.70</text>
+        <text class="s3bL" x="462" y="184">late</text><text class="s3bS" x="628" y="184">2.42</text>
+        <text class="s3bL" x="462" y="206">case</text><text class="s3bS" x="625" y="206">2.23</text>
+
+        <text class="s3bH" x="38" y="254">Credit reporting</text>
+        <text class="s3bL" x="38" y="282">report</text><text class="s3bS" x="244" y="282">4.40</text>
+        <text class="s3bL" x="38" y="304">credit</text><text class="s3bS" x="238" y="304">4.12</text>
+        <text class="s3bL" x="38" y="326">experian</text><text class="s3bS" x="227" y="326">3.53</text>
+        <text class="s3bL" x="38" y="348">bureaus</text><text class="s3bS" x="225" y="348">3.44</text>
+        <text class="s3bL" x="38" y="370">these</text><text class="s3bS" x="223" y="370">3.33</text>
+        <text class="s3bL" x="38" y="392">credit_bureaus</text><text class="s3bS" x="215" y="392">2.95</text>
+
+        <text class="s3bH" x="462" y="254">Student loan</text>
+        <text class="s3bL" x="462" y="282">loans</text><text class="s3bS" x="726" y="282">7.32</text>
+        <text class="s3bL" x="462" y="304">loan</text><text class="s3bS" x="717" y="304">6.85</text>
+        <text class="s3bL" x="462" y="326">mohela</text><text class="s3bS" x="712" y="326">6.59</text>
+        <text class="s3bL" x="462" y="348">student</text><text class="s3bS" x="684" y="348">5.21</text>
+        <text class="s3bL" x="462" y="370">nelnet</text><text class="s3bS" x="669" y="370">4.47</text>
+        <text class="s3bL" x="462" y="392">aidvantage</text><text class="s3bS" x="654" y="392">3.71</text>
+
+        <text class="s3bS" x="60" y="429">word weight</text>
+        <text class="s3bS" x="220" y="429">a company's name</text>
+        <text class="s3bB" x="450" y="429">"report" is heavy for debt collection too</text>
+        <text class="s3bN" x="24" y="458">R4 weights from 2,400 training rows, one scale for every panel. Read a weight within its queue.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the heaviest words are mostly the obvious product words, plus two warnings: "report" pulls toward debt collection, and company names carry real weight</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Six scores, one softmax, one queue<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Chapter 4 of Jurafsky and Martin's 2026 draft is titled "Logistic Regression and Text Classification", and the multi-class version is exactly Ledgerly's problem. For each queue the model keeps a weight for every feature (here, TF-IDF weighted words and two-word bigrams that appear in at least two training complaints) plus a bias. A complaint's score for a queue is the bias plus each feature's value times its weight. Softmax turns the six scores into six probabilities that sum to one; the complaint goes to the biggest.</p>
+        <p>The weights are learned, not counted. The bench starts them at zero and makes 10 passes over the 2,400 training complaints in a seeded random order (stochastic gradient descent, learning rate 1). Each time a complaint is scored, the weights of its words move a little toward the right queue and away from the wrong ones. The seed fixes the order, so you get the same weights every run.</p>
+        <p>This rung is R4. It routes 467 of 600 held-out complaints correctly, 0.778, with macro F1 0.779: ten more complaints than naive Bayes on the same holdout.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Read the heaviest words before you read the accuracy<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Open "What the logistic model learned" on the R4 rung. Most of it is reassuring: "debt" 8.96 and "collection" 6.35 for debt collection, "card" 11.08 for credit card, "car" 7.93 and "vehicle" 6.34 for vehicle loan, "bank" 6.81 and "deposit" 5.02 for checking or savings. A model whose top words are the product words is routing for the right reasons.</p>
+        <p>Two rows deserve a second look. In debt collection, the sixth heaviest word is "report" (2.66), the same word that leads credit reporting (4.40). Collectors report debts to the credit bureaus, so complaints about one often talk about the other; that shared vocabulary is exactly where Part 3's biggest misroute comes from. And in credit card, "for" (2.74) and "case" (2.23) carry weight: not product words, just habits of how card complaints happen to be written in this sample.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Company names are strong signals, and fragile ones<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Three of the six heaviest student loan words are company names: "mohela" 6.59, "nelnet" 4.47 and "aidvantage" 3.71, all federal student loan servicers. In credit reporting, "experian" (3.53), a credit bureau, sits among the top three. The model is not wrong to use them: in 2023, a complaint naming a federal loan servicer was very likely a student loan complaint.</p>
+        <p>It is a dependency you did not choose. If loans move to a new servicer, or a servicer starts offering a different product, the name stops meaning what it meant in the training rows and the routing quietly degrades. A product word like "loan" travels; a company name is a fact about the market in one year. Write the company-name weights on the playbook page so the next retrain checks whether they still hold.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Why weights beat counts here, and only by ten complaints<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Naive Bayes estimates each word's evidence on its own, so two words that always appear together are counted twice. Logistic regression learns all weights at once, so when "credit" and "report" travel together it can split the credit between them. It can also use bigrams like "a_debt" and "credit_card" that session 2 added. That is why it edges ahead: 467 against 457 correct.</p>
+        <p>Ten complaints out of 600 is a modest gap, and the two models disagree on different complaints. Session 4 puts both on the full bench with validation tuning and two traps, and asks whether the gap survives.</p>
+      </div>
+    </details>
+
+    <div class="callout example">
+      <p><span class="ex-pill">Real world</span> <strong>The router that learned the brand, not the problem.</strong> An insurer's email classifier routes claims beautifully for a year. Then a partner company is acquired and renamed, and claims mentioning the new name start landing in a general inbox. Nobody had looked at the weights: the old partner's name had been one of the strongest signals for the claims queue. Reading the top words would have flagged it on day one; a quarterly check on name-heavy weights would have caught the rename.</p>
+    </div>
+  </section>
+
+  <section class="section" id="part-3">
+    <div class="section-kicker">
+      <span class="klabel">Part 3 · covers per-queue precision, recall, F1 and the confusion table</span>
+      <h2>Errors are a routing cost</h2>
+      <span class="tag concept">5 min live</span>
+    </div>
+    <p class="lede">An accuracy of 0.778 says 133 of 600 complaints went to the wrong queue. It does not say which ones, or which desk is drowning in the wrong work. For routing, every error has a direction: from the queue it belonged to, into the queue it landed in. The confusion table records every direction, and precision and recall summarise each queue.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 306" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The two biggest misroutes of the R4 logistic model on 600 held-out complaints. Debt collection, 120 rows, 80 routed right: 23 go to credit reporting, highlighted; 12 credit reporting complaints go the other way. Credit card, 90 rows, 62 routed right: 14 go to checking or savings; 7 checking or savings complaints go the other way. Credit reporting has 180 rows, 161 right; checking or savings 90 rows, 73 right. R2 had the same two leaks: 21 and 16.">
+        <defs>
+          <filter id="s3cSk" x="-3%" y="-3%" width="106%" height="106%"><feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="41" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.4" xChannelSelector="R" yChannelSelector="G"/></filter>
+          <pattern id="s3cHc" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(-38)"><line x1="0" y1="0" x2="0" y2="7" stroke="#592A22" stroke-width="1" opacity=".5"/></pattern>
+          <marker id="s3cAr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M1 1 L9 5 L1 9" fill="none" stroke="#2B1C18" stroke-width="1.6" stroke-linecap="round"/></marker>
+        </defs>
+        <style>
+          .s3cH { font: 800 12px Inter, sans-serif; fill: #2B1C18; }
+          .s3cL { font: 600 12px Inter, sans-serif; fill: #2B1C18; }
+          .s3cS { font: 400 11px Inter, sans-serif; fill: #5E4A44; }
+          .s3cB { font: 800 11px Inter, sans-serif; fill: #1E4566; }
+          .s3cA { font: 700 11px Inter, sans-serif; fill: #592A22; }
+          .s3cN { font: 400 12px Inter, sans-serif; fill: #5E4A44; }
+        </style>
+
+        <text class="s3cH" x="24" y="26">WHERE THE MISROUTES GO: THE TWO BIGGEST LEAKS IN R4</text>
+        <text class="s3cS" x="24" y="44">600 held-out complaints · each box is a true queue · arrows carry complaints routed to the other queue</text>
+
+        <g filter="url(#s3cSk)" fill="none" stroke="#2B1C18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="30" y="62" width="230" height="74" rx="10" transform="rotate(-0.6 145 99)" fill="#F8EEEB"/>
+          <rect x="620" y="62" width="230" height="74" rx="10" transform="rotate(0.5 735 99)" fill="#FFFFFF"/>
+          <path d="M268 94 L606 94" stroke-width="6" marker-end="url(#s3cAr)"/>
+          <path d="M612 120 L276 120" stroke-width="2" marker-end="url(#s3cAr)"/>
+          <rect x="380" y="58" width="120" height="24" rx="12" fill="#A9C8E3"/>
+
+          <rect x="30" y="172" width="230" height="74" rx="10" transform="rotate(0.5 145 209)" fill="#F8EEEB"/>
+          <rect x="620" y="172" width="230" height="74" rx="10" transform="rotate(-0.5 735 209)" fill="#FFFFFF"/>
+          <path d="M268 204 L606 204" stroke-width="4" marker-end="url(#s3cAr)"/>
+          <path d="M612 230 L276 230" stroke-width="1.6" marker-end="url(#s3cAr)"/>
+          <rect x="390" y="168" width="100" height="24" rx="12" fill="#FFFFFF"/>
+        </g>
+
+        <text class="s3cH" x="46" y="92">Debt collection</text>
+        <text class="s3cS" x="46" y="114">120 rows · 80 routed right</text>
+        <text class="s3cH" x="636" y="92">Credit reporting</text>
+        <text class="s3cS" x="636" y="114">180 rows · 161 routed right</text>
+        <text class="s3cL" x="440" y="75" text-anchor="middle">23 of 120</text>
+        <text class="s3cS" x="440" y="140" text-anchor="middle">12 of 180 the other way</text>
+
+        <text class="s3cH" x="46" y="202">Credit card</text>
+        <text class="s3cS" x="46" y="224">90 rows · 62 routed right</text>
+        <text class="s3cH" x="636" y="202">Checking or savings</text>
+        <text class="s3cS" x="636" y="224">90 rows · 73 routed right</text>
+        <text class="s3cL" x="440" y="185" text-anchor="middle">14 of 90</text>
+        <text class="s3cS" x="440" y="250" text-anchor="middle">7 of 90 the other way</text>
+
+        <text class="s3cN" x="24" y="276">R2 (naive Bayes) had the same two leaks: 21 debt collection to credit reporting, 16 card to checking.</text>
+        <text class="s3cN" x="24" y="294">Student loan and vehicle loan leak less; the largest is 9 vehicle loan complaints sent to debt collection.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - errors have a direction: debt collection leaks into credit reporting far more than the reverse, and both models make the same two mistakes</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Precision and recall, in routing words<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p><strong>Precision</strong> of a queue: of what was routed here, how much belonged here. R4 sends 101 complaints to checking or savings and 73 of them are checking or savings complaints: precision 0.723. The other 28 are someone else's work on that desk.</p>
+        <p><strong>Recall</strong> of a queue: of what belonged here, how much arrived. Of 90 checking or savings complaints, 73 arrived: recall 0.811. The other 17 are sitting on another desk.</p>
+        <p><strong>F1</strong> is the harmonic mean of the two, one number per queue, and <strong>macro F1</strong> averages it over the six queues so that a small queue counts as much as a big one. The full definitions, with the arithmetic, are taught in <a href="https://phoebefu6.github.io/learn-intro-ml-with-phoebe/courses/b7-classification-metrics.html">Intro to ML, b7: classification metrics</a>; here we apply them to queues.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Read the confusion table row by row<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Each row is a true queue; each column is where its complaints were sent; the diagonal is the right answers. Read the off-diagonal cells of 10 or more first (the bench shades them). For R4 there are three: debt collection to credit reporting (23), card to checking or savings (14), and credit reporting to debt collection (12).</p>
+        <p>Compare R2 and R4 cell by cell and the story is stable. Debt collection to credit reporting: 21 under naive Bayes, 23 under logistic. Card to checking: 16, then 14. Logistic regression did not fix Ledgerly's two biggest leaks; it shaved errors elsewhere. When two different models make the same mistake, the cause is usually in the text (or the labels), not the model.</p>
+        <table class="clean">
+          <thead><tr><th>Queue</th><th>R2 precision / recall</th><th>R4 precision / recall</th></tr></thead>
+          <tbody>
+            <tr><td>Credit reporting</td><td>0.818 / 0.872</td><td>0.789 / 0.894</td></tr>
+            <tr><td>Debt collection</td><td>0.635 / 0.667</td><td>0.696 / 0.667</td></tr>
+            <tr><td>Credit card</td><td>0.811 / 0.667</td><td>0.756 / 0.689</td></tr>
+            <tr><td>Checking or savings</td><td>0.673 / 0.756</td><td>0.723 / 0.811</td></tr>
+            <tr><td>Student loan</td><td>0.944 / 0.850</td><td>0.980 / 0.833</td></tr>
+            <tr><td>Vehicle loan or lease</td><td>0.774 / 0.683</td><td>0.872 / 0.683</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Which error costs more is a business decision<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>A debt collection complaint that lands in credit reporting is read by a team that handles bureau disputes, not collection practices. It waits, gets rerouted, and the reply goes out late. A credit reporting complaint that lands in debt collection costs the collections desk some reading time. The counts are 23 and 12, but the costs per complaint are not equal, and no metric knows which one hurts Ledgerly more. The complaints manager does.</p>
+        <p>That decision changes which number you optimise. If late collection replies are the expensive error, you want debt collection recall up, even at the price of credit reporting precision: a lower threshold for "debt collection", or a rule that sends any complaint with both "debt" and bureau words to a human. Write the decision down with an owner; a model can only follow a cost it has been told.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>The rebalanced sample changes every precision<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The bench's sample is rebalanced: credit reporting is 30% of it, but 76.7% of the real 2023 complaints. Recall is a property of each queue's own rows and travels reasonably well to the real mix. Precision does not: on the real mix, there would be far more credit reporting complaints available to leak into every other queue, so the precision of the small queues would fall and credit reporting's would rise. Before quoting any precision to a manager, rescore on a sample with the real mix, or at least say which mix the number comes from.</p>
+      </div>
+    </details>
+
+    <div class="callout example">
+      <p><span class="ex-pill">Real world</span> <strong>The 95% that hid the complaints nobody answered.</strong> A bank's complaint router reports 95% accuracy every month. A new operations lead asks for the confusion table and finds that most of the errors flow one way: hardship requests were landing in the general servicing queue, where the response clock is longer. The overall number was true and useless. One row of the table, with an owner, fixed in a week what a year of accuracy reports had hidden.</p>
+    </div>
+  </section>
+
+  <section class="section" id="demo-1">
+    <div class="section-kicker">
+      <span class="klabel">Build-along</span>
+      <h2>Ledgerly's routing classifier and error table</h2>
+      <span class="tag demo">★ 22 min · everyone builds</span>
+    </div>
+    <p class="lede">You will run both classifiers in the page on the same 600 held-out complaints, compare their tables, read what the logistic model learned, reproduce both in scikit-learn, and write page 3 of Ledgerly's playbook: the chosen classifier, its error table, and the two misroutes that need an owner (Constructed Ledgerly example; the complaints and every number are real bench output).</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 328" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Ledgerly's routing error table for R4, a playbook artefact. Credit reporting: 180 rows, precision 0.789, recall 0.894, biggest leak 12 to debt collection. Debt collection, highlighted: 120 rows, precision 0.696, recall 0.667, biggest leak 23 to credit reporting. Credit card: 90 rows, 0.756, 0.689, 14 to checking or savings. Checking or savings: 90 rows, 0.723, 0.811, 7 to credit card. Student loan: 60 rows, 0.980, 0.833, 4 to credit reporting. Vehicle loan or lease: 60 rows, 0.872, 0.683, 9 to debt collection. Owner actions are constructed. Note: the sample is rebalanced, credit reporting 30% here and 76.7% in the real 2023 rows.">
+        <defs>
+          <filter id="s3dSk" x="-3%" y="-3%" width="106%" height="106%"><feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="43" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.4" xChannelSelector="R" yChannelSelector="G"/></filter>
+          <pattern id="s3dHc" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(-38)"><line x1="0" y1="0" x2="0" y2="7" stroke="#592A22" stroke-width="1" opacity=".5"/></pattern>
+          <marker id="s3dAr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M1 1 L9 5 L1 9" fill="none" stroke="#2B1C18" stroke-width="1.6" stroke-linecap="round"/></marker>
+        </defs>
+        <style>
+          .s3dH { font: 800 12px Inter, sans-serif; fill: #2B1C18; }
+          .s3dL { font: 600 12px Inter, sans-serif; fill: #2B1C18; }
+          .s3dS { font: 400 11px Inter, sans-serif; fill: #5E4A44; }
+          .s3dB { font: 800 11px Inter, sans-serif; fill: #1E4566; }
+          .s3dA { font: 700 11px Inter, sans-serif; fill: #592A22; }
+          .s3dN { font: 400 12px Inter, sans-serif; fill: #5E4A44; }
+        </style>
+
+        <text class="s3dH" x="24" y="26">LEDGERLY'S ROUTING ERROR TABLE, R4 (CONSTRUCTED LEDGERLY EXAMPLE)</text>
+        <text class="s3dS" x="24" y="44">real bench numbers on 600 held-out complaints · the owner actions are constructed</text>
+
+        <g filter="url(#s3dSk)" fill="none" stroke="#2B1C18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="24" y="56" width="832" height="232" rx="10" transform="rotate(-0.2 440 172)" fill="#FFFFFF"/>
+          <path d="M36 92 L844 92" stroke-width="1.2"/>
+          <rect x="32" y="130" width="816" height="24" rx="6" fill="#A9C8E3"/>
+        </g>
+
+        <text class="s3dA" x="40" y="80">Queue</text>
+        <text class="s3dA" x="214" y="80">Rows</text>
+        <text class="s3dA" x="270" y="80">Precision</text>
+        <text class="s3dA" x="360" y="80">Recall</text>
+        <text class="s3dA" x="440" y="80">Biggest leak</text>
+        <text class="s3dA" x="640" y="80">Owner action (constructed)</text>
+
+        <text class="s3dL" x="40" y="116">Credit reporting</text>
+        <text class="s3dS" x="214" y="116">180</text>
+        <text class="s3dS" x="270" y="116">0.789</text>
+        <text class="s3dS" x="360" y="116">0.894</text>
+        <text class="s3dS" x="440" y="116">12 to debt collection</text>
+        <text class="s3dS" x="640" y="116">Sample 20 inflows a week</text>
+
+        <text class="s3dL" x="40" y="146">Debt collection</text>
+        <text class="s3dL" x="214" y="146">120</text>
+        <text class="s3dL" x="270" y="146">0.696</text>
+        <text class="s3dL" x="360" y="146">0.667</text>
+        <text class="s3dL" x="440" y="146">23 to credit reporting</text>
+        <text class="s3dL" x="640" y="146">Review debt + bureau overlap</text>
+
+        <text class="s3dL" x="40" y="176">Credit card</text>
+        <text class="s3dS" x="214" y="176">90</text>
+        <text class="s3dS" x="270" y="176">0.756</text>
+        <text class="s3dS" x="360" y="176">0.689</text>
+        <text class="s3dS" x="440" y="176">14 to checking or savings</text>
+        <text class="s3dS" x="640" y="176">Tag fee disputes by product</text>
+
+        <text class="s3dL" x="40" y="206">Checking or savings</text>
+        <text class="s3dS" x="214" y="206">90</text>
+        <text class="s3dS" x="270" y="206">0.723</text>
+        <text class="s3dS" x="360" y="206">0.811</text>
+        <text class="s3dS" x="440" y="206">7 to credit card</text>
+        <text class="s3dS" x="640" y="206">Spot-check card inflow</text>
+
+        <text class="s3dL" x="40" y="236">Student loan</text>
+        <text class="s3dS" x="214" y="236">60</text>
+        <text class="s3dS" x="270" y="236">0.980</text>
+        <text class="s3dS" x="360" y="236">0.833</text>
+        <text class="s3dS" x="440" y="236">4 to credit reporting</text>
+        <text class="s3dS" x="640" y="236">Watch servicer-name weights</text>
+
+        <text class="s3dL" x="40" y="266">Vehicle loan or lease</text>
+        <text class="s3dS" x="214" y="266">60</text>
+        <text class="s3dS" x="270" y="266">0.872</text>
+        <text class="s3dS" x="360" y="266">0.683</text>
+        <text class="s3dS" x="440" y="266">9 to debt collection</text>
+        <text class="s3dS" x="640" y="266">Review repossession debts</text>
+
+        <text class="s3dN" x="24" y="312">Rebalanced sample: credit reporting is 30% here and 76.7% of real 2023 rows, so recheck precision on the real mix.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the error table is the routing classifier's real deliverable: per queue, what leaks where, and who owns fixing it</figcaption>
+    </figure>
+
+    <div class="steps">
+      <div class="step">
+        <p><strong>Run naive Bayes and read its table.</strong> The bench below trains in your browser on the 2,400 training complaints and scores the 600 held back. It opens on R2, counts plus naive Bayes. Read the headline (0.762, 457 of 600, macro F1 0.760), then the per-queue table, then the confusion table: find the two shaded cells off the diagonal with the biggest counts.</p>
+        <div class="prompt-box good"><span class="label">★ Step 1 · what to write down from R2</span>Accuracy and correct of 600:
+Macro F1:
+Lowest-recall queue, and its recall:
+Biggest off-diagonal cell (true queue, routed to, count):
+Second biggest:</div>
+        <div class="ntx-mount" data-ntx="bench" data-rungs="r2,r4" data-start="r2" data-llm="off"></div>
+      </div>
+
+      <div class="step">
+        <p><strong>Switch to R4 and compare, queue by queue.</strong> Click R4 (TF-IDF + bigrams + logistic). The headline moves to 0.778, 467 of 600, macro F1 0.779. Now look past it: debt collection to credit reporting goes from 21 to 23, card to checking from 16 to 14, and vehicle loan precision rises from 0.774 to 0.872 while its recall stays at 0.683. Ten more right answers overall, the same two leaks.</p>
+        <div class="prompt-box good"><span class="label">★ Step 2 · R2 against R4, the cells that matter</span>                         R2      R4
+Accuracy               0.762   0.778
+Macro F1               0.760   0.779
+Debt coll. -&gt; credit rep.  21      23
+Card -&gt; checking           16      14
+Debt collection recall 0.667   0.667
+Checking precision     0.673   0.723</div>
+      </div>
+
+      <div class="step">
+        <p><strong>Open "What the logistic model learned".</strong> Under the R4 tables, expand the panel. For each queue, decide whether each of the six words is a product word (keep trusting it), a company name (write it down as a dependency), or a writing habit (watch it). Find "report" in the debt collection row and connect it to the 23.</p>
+        <div class="prompt-box good"><span class="label">★ Step 3 · sort the heaviest words</span>Product words:  debt, collection, card, credit_card, loans, car, vehicle, bank, deposit ...
+Company names:   mohela 6.59, nelnet 4.47, aidvantage 3.71 (student), experian 3.53 (reporting)
+Writing habits:  for 2.74, case 2.23 (credit card), these 3.33 (credit reporting)
+Shared word:     report, 4.40 for credit reporting and 2.66 for debt collection</div>
+      </div>
+
+      <div class="step">
+        <p><strong>Reproduce both rungs in scikit-learn.</strong> The bench writes its own small models so the browser and a plain-Python reference agree to the last digit. scikit-learn uses its own solver and tokeniser defaults, so expect numbers close to 0.762 and 0.778, not identical. What should match is the shape: logistic slightly ahead, and the same two misroutes at the top of the confusion table.</p>
+        <div class="prompt-box good"><span class="label">★ Step 4 · Python, run locally (scikit-learn)</span>from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report, confusion_matrix
+
+# texts_train, y_train, texts_test, y_test: the same 2,400 / 600 split, one string per complaint
+queues = ["report", "collect", "card", "bank", "student", "auto"]
+
+# R2: word counts + naive Bayes (alpha=1.0 is the default: add-one smoothing)
+cv = CountVectorizer(token_pattern=r"[a-z]+")
+nb = MultinomialNB(alpha=1.0).fit(cv.fit_transform(texts_train), y_train)
+pred_nb = nb.predict(cv.transform(texts_test))
+print(classification_report(y_test, pred_nb, labels=queues, digits=3))
+print(confusion_matrix(y_test, pred_nb, labels=queues))
+
+# R4: TF-IDF + bigrams (min df 2) + logistic regression
+tv = TfidfVectorizer(token_pattern=r"[a-z]+", ngram_range=(1, 2), min_df=2)
+lr = LogisticRegression(max_iter=2000).fit(tv.fit_transform(texts_train), y_train)
+pred_lr = lr.predict(tv.transform(texts_test))
+print(classification_report(y_test, pred_lr, labels=queues, digits=3))
+print(confusion_matrix(y_test, pred_lr, labels=queues))
+# your numbers will be close, not identical</div>
+      </div>
+
+      <div class="step">
+        <p><strong>Write page 3 of the playbook.</strong> Paste the block below into Ledgerly's text playbook after the weighting page, fill the owners and the date, and keep the rebalancing line: it is the sentence that stops someone quoting these precisions as real-world numbers.</p>
+        <div class="prompt-box good"><span class="label">★ Step 5 · Ledgerly text playbook, page 3: routing classifier and error table (Constructed Ledgerly example)</span>Classifier: R4, TF-IDF + bigrams (min df 2) + logistic regression, 10 seeded SGD passes.
+  Holdout 0.778 (467 of 600), macro F1 0.779. Baseline R2 naive Bayes: 0.762, 0.760.
+  Chosen because: higher macro F1, readable weights. Same two leaks as R2.
+Error table (precision / recall / biggest leak):
+  Credit reporting     0.789 / 0.894 / 12 to debt collection
+  Debt collection      0.696 / 0.667 / 23 to credit reporting
+  Credit card          0.756 / 0.689 / 14 to checking or savings
+  Checking or savings  0.723 / 0.811 /  7 to credit card
+  Student loan         0.980 / 0.833 /  4 to credit reporting
+  Vehicle loan/lease   0.872 / 0.683 /  9 to debt collection
+Misroute 1: debt collection -&gt; credit reporting, 23 of 120 (R2: 21).
+  Cause: shared vocabulary ("report" 2.66 in debt collection). Owner: ____________
+Misroute 2: credit card -&gt; checking or savings, 14 of 90 (R2: 16). Owner: ____________
+Dependencies: company names among top weights (mohela, nelnet, aidvantage, experian).
+Caveat: sample REBALANCED, credit reporting 30% here vs 76.7% of real 2023 rows;
+  precision will differ on the real mix. Rescore before quoting.
+Date: ____________</div>
+      </div>
+    </div>
+
+    <div class="callout tip">
+      <p><strong>Hand the manager the table, not the accuracy.</strong> "0.778" invites a debate about whether that is good. "23 of every 120 debt collection complaints reach the bureau disputes desk first" invites a decision, and an owner. The error table is the routing classifier's real output.</p>
+    </div>
+  </section>
+
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Before session 4</h2>
+      <span class="tag exercise">30 min</span>
+    </div>
+    <ol>
+      <li><strong>Train naive Bayes on a labelled text pile you own</strong> (tickets with a category, survey answers with a code) and print its confusion table. Name the biggest off-diagonal cell and guess the shared words behind it before you look.</li>
+      <li><strong>Print the heaviest words of a logistic model</strong> on the same data and sort them into product words, names and writing habits, as in step 3. Count how many are names.</li>
+      <li><strong>Write the cost sentence for your two biggest misroutes</strong>: what happens to one complaint (or ticket) that lands in the wrong place, who notices, how late. Decide which of the two is more expensive and why.</li>
+      <li><strong>Work out precision for one queue on the real mix.</strong> If credit reporting were 76.7% of the complaints instead of 30%, would debt collection's precision go up or down? Write one paragraph; session 4 returns to it.</li>
+    </ol>
+  </section>
+
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions</h2>
+    </div>
+    <p>Clear all three and session 3 gets stamped in your passport.</p>
+
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">1 · What does add-one smoothing prevent in naive Bayes?</p>
+      <button class="qopt" type="button">A · It stops the model from overfitting to long complaints</button>
+      <button class="qopt" type="button">B · A word never seen in one queue's training rows getting probability zero and ruling that queue out on its own</button>
+      <button class="qopt" type="button">C · It removes stop words before counting</button>
+      <button class="qopt" type="button">D · It makes the priors equal across the six queues</button>
+      <p class="qwhy">The score multiplies one likelihood per word. A single zero wipes out the queue whatever the other words say. Adding 1 to every count (alpha 1.0, scikit-learn's default) keeps every word's likelihood above zero.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="3">
+      <p class="qtext">2 · Under R4, credit reporting has precision 0.789 and recall 0.894. What does that pair tell Ledgerly?</p>
+      <button class="qopt" type="button">A · The model is 89.4% accurate overall</button>
+      <button class="qopt" type="button">B · Credit reporting complaints are mostly sent to other queues</button>
+      <button class="qopt" type="button">C · Precision and recall should always be equal, so the model is broken</button>
+      <button class="qopt" type="button">D · Most credit reporting complaints arrive, but about a fifth of what lands on that desk belongs elsewhere: it is a queue other queues leak into</button>
+      <p class="qwhy">Recall 0.894: of the 180 credit reporting complaints, 161 arrived. Precision 0.789: of the 204 routed there, 43 came from other queues, 23 of them from debt collection. On the real mix, where credit reporting is 76.7% and not 30%, these numbers would shift.</p>
+    </div>
+
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">3 · "mohela" (6.59) is the third heaviest word for the student loan queue. Why is that a risk?</p>
+      <button class="qopt" type="button">A · Company names are always noise and should never get a weight</button>
+      <button class="qopt" type="button">B · It means the model is overfitted and its 0.778 is invalid</button>
+      <button class="qopt" type="button">C · The weight encodes which companies served which product in 2023; if loans move between servicers or products change, routing quietly degrades</button>
+      <button class="qopt" type="button">D · Logistic regression cannot handle proper nouns</button>
+      <p class="qwhy">The name is a genuine signal in the training year, which is why the model uses it. It is a fact about the market, not about the complaint, so it can expire. Record it as a dependency and check it at every retrain.</p>
+    </div>
+
+    <p class="quiz-score"></p>
+  </section>
+
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Sources covered</span>
+      <h2>What this session teaches, and where it came from</h2>
+    </div>
+    <div class="covered">
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Naive Bayes for text</span><span class="note">Jurafsky and Martin (2024 draft), ch 4 "Naive Bayes, Text Classification, and Sentiment": bag of words, conditional independence, add-one smoothing Eq 4.14; read at source</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Logistic regression for text</span><span class="note">Jurafsky and Martin (2026 draft), Speech and Language Processing, 3rd ed., ch 4 "Logistic Regression and Text Classification"; read at source</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">MultinomialNB alpha default</span><span class="note">scikit-learn documentation, MultinomialNB API page: alpha default 1.0 (read 2026-11-19)</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">Naive Bayes derivation</span><span class="note">Linked, not retaught: Classification &amp; Regression, c6</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">Classification metrics</span><span class="note">Linked, not retaught: Intro to ML, b7; applied here to routing queues</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Every number on this page</span><span class="note">Computed by the bench on the shipped sample (R2, R4, weights, confusion tables); a plain-Python reference run gives the same values. Figure 1's dots and score bars are illustrative</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Ledgerly</span><span class="note">Constructed example; the complaints are real, the team and its owner actions are fictional</span></div>
+    </div>
+    <p class="mono" style="margin-top:14px">Every fact on this page, and its verification tier, is recorded in the course's source map.</p>
+  </section>
+
+  <section class="cheat" id="cheatsheet">
+    <h3>Session 3 cheat sheet <span>· pin this</span></h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>Naive Bayes</b><span>log prior + sum of log word likelihoods. Counts in, not TF-IDF: R2 0.762, R3 0.608.</span></div>
+      <div class="cheat-item"><b>Add-one smoothing</b><span>One unseen word must not zero a queue. scikit-learn MultinomialNB alpha defaults to 1.0.</span></div>
+      <div class="cheat-item"><b>Logistic regression</b><span>One learned weight per word per queue, softmax over six. R4 0.778, macro F1 0.779.</span></div>
+      <div class="cheat-item"><b>Read the weights first</b><span>Product words reassure. Shared words ("report") predict leaks. Company names are dependencies.</span></div>
+      <div class="cheat-item"><b>Precision vs recall</b><span>Precision: of what landed here, how much belonged. Recall: of what belonged, how much arrived.</span></div>
+      <div class="cheat-item"><b>Errors have a direction</b><span>Debt collection to credit reporting 23 of 120. Give each big leak a cost and an owner. Say which mix.</span></div>
+    </div>
+  </section>
+
+  <div class="callout next">
+    <span class="nx-pill">Next session</span>
+    <p>Two rungs are not a bench. Session 4 runs every rung from "always guess the biggest queue" to a model tuned on a validation split, then springs two traps: scoring on the training rows, and training on shuffled labels. You will see a number that looks wonderful and measures nothing, and learn to put it on the page anyway.</p>
+  </div>
+
+  <footer class="pagefoot">
+    <span>Session 3 of 6 · learn-nlp-text-analytics-with-phoebe · by Phoebe Fu &nbsp;·&nbsp; 📚 <a href="https://phoebefu6.github.io/learn-with-phoebe/">Learn with Phoebe ↗</a></span>
+    <span><a href="02-weight-the-words.html">← Prev: Weight the words</a> &nbsp;·&nbsp; <a href="04-the-text-bench.html">Next: The text bench →</a></span>
+  </footer>
+
+</main>
+
+<script src="../assets/ntx-sample.js?v=2"></script>
+<script src="../assets/ntx-live.js?v=2"></script>
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

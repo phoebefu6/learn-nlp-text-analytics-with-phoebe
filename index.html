@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- social:start -->
+<meta name="description" content="Six sessions on text as data, before and without a large language model. Tokenise, weight, classify and search 3,000 real consumer complaints in your browser, and find out when a two-line classifier beats the model everyone wants to buy. Free, by Phoebe Fu.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Learn with Phoebe">
+<meta property="og:title" content="Learn NLP &amp; Text Analytics with Phoebe">
+<meta property="og:description" content="Text as data, before and without a large language model. Tokenise, weight, classify and search real complaint text in your browser.">
+<meta property="og:url" content="https://phoebefu6.github.io/learn-nlp-text-analytics-with-phoebe/">
+<meta property="og:image" content="https://phoebefu6.github.io/learn-nlp-text-analytics-with-phoebe/assets/og-cover.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Learn NLP &amp; Text Analytics with Phoebe">
+<meta name="twitter:description" content="A real text bench in your browser: 3,000 real complaints, six classifiers, two traps, and a priced LLM alternative.">
+<meta name="twitter:image" content="https://phoebefu6.github.io/learn-nlp-text-analytics-with-phoebe/assets/og-cover.png">
+<!-- social:end -->
+<title>Learn NLP &amp; Text Analytics with Phoebe</title>
+<link rel="stylesheet" href="assets/style.css?v=2">
+<style>
+
+  .stats-row { display: flex; gap: 2.4rem; margin-top: 1.5rem; flex-wrap: wrap; }
+  .stat b { display: block; font-size: 2.1rem; font-weight: 800; line-height: 1.05; font-variant-numeric: tabular-nums; }
+  .stat span { font-size: .72rem; opacity: 1; text-transform: uppercase; letter-spacing: .09em; font-weight: 600; }
+
+  .course-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); gap: 1rem; margin-top: 1.5rem; }
+  .course-card {
+    border: 1px solid var(--hairline);
+    border-top: 4px solid var(--diff, var(--indigo));
+    border-radius: var(--radius);
+    padding: 1.2rem 1.3rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+    text-decoration: none;
+    color: var(--ink);
+    background: #fff;
+    transition: box-shadow .15s ease, border-color .15s ease, transform .15s ease;
+    position: relative;
+  }
+  .course-card:hover { border-color: var(--indigo-soft); border-top-color: var(--diff, var(--indigo)); box-shadow: 0 8px 28px rgba(var(--shadow-rgb),.16); transform: translateY(-3px); }
+  .course-card .cicon { font-size: 1.7rem; line-height: 1; }
+  .course-card .cnum { font-size: .72rem; font-weight: 700; color: var(--indigo); text-transform: uppercase; letter-spacing: .1em; }
+  .course-card h3 { font-size: 1.05rem; font-weight: 800; line-height: 1.3; }
+  .course-card p { font-size: .85rem; color: var(--muted); flex: 1; }
+  .course-card .meta { display: flex; gap: .4rem; flex-wrap: wrap; }
+
+  .diff-legend { display: flex; gap: 1rem; margin-top: 1.6rem; font-size: .74rem; color: var(--muted); font-weight: 600; flex-wrap: wrap; }
+  .diff-legend i { display: inline-block; width: .85rem; height: .35rem; border-radius: 999px; margin-right: .35rem; vertical-align: middle; }
+
+  .paths { margin-top: 2.6rem; }
+  .paths h2 { font-size: 1.3rem; font-weight: 800; margin-bottom: .3rem; }
+  .paths .plede { color: var(--muted); font-size: .92rem; margin-bottom: .8rem; }
+  .path { display: flex; gap: .55rem; align-items: center; padding: .75rem 0; border-bottom: .5px solid var(--hairline); flex-wrap: wrap; }
+  .path:last-child { border-bottom: none; }
+  .path b { min-width: 15.5rem; font-size: .9rem; }
+  .path .pstep { background: var(--indigo-50); color: var(--indigo-deep); border-radius: 999px; padding: .16rem .68rem; font-weight: 700; font-size: .8rem; text-decoration: none; transition: all .12s ease; }
+  .path .pstep:hover { background: var(--indigo); color: #fff; }
+  .path .parr { color: var(--muted); font-weight: 700; }
+
+  .mm-section { margin-top: 1.6rem; }
+  .mm-section h2 { font-size: 1.3rem; font-weight: 800; margin-bottom: .2rem; }
+  .mm-section .mm-lede { color: var(--muted); font-size: .92rem; margin-bottom: .4rem; }
+  .mm-wrap { border: 1px solid var(--hairline); border-radius: var(--radius); background: linear-gradient(180deg,#fff,var(--indigo-50)); padding: .6rem; overflow-x: auto; }
+  .mm-svg { width: 100%; height: auto; display: block; max-width: 60rem; margin: 0 auto; min-width: 34rem; }
+  .mm-link { cursor: pointer; text-decoration: none; }
+  .mm-node rect { transition: opacity .15s ease, filter .15s ease; }
+  .mm-node text { pointer-events: none; }
+  .mm-link:hover .mm-node rect { filter: brightness(1.06); }
+  .mm-edge { transition: opacity .15s ease; }
+
+  .not-this { border: 1px solid var(--hairline); border-left: 4px solid var(--amber); border-radius: var(--radius); background: #fff; padding: 1.1rem 1.3rem; margin-top: 1.2rem; }
+  .not-this h3 { font-size: .95rem; font-weight: 800; margin-bottom: .5rem; }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn with Phoebe · Data Science</div>
+    <h1>Learn <span class="accent">NLP &amp; Text Analytics</span> with Phoebe</h1>
+    <p class="sub">Text as data, before and without a large language model. Tokenise, weight, classify and search real complaint text in your browser, and find out when a two-line classifier beats the model everyone wants to buy. Every session asks one question: what can be counted, classified and searched cheaply, auditably and reproducibly, and where does a big model actually earn its cost?</p>
+    <div class="stats-row">
+      <div class="stat"><b data-count="6">6</b><span>sessions</span></div>
+      <div class="stat"><b data-count="3000">3000</b><span>real complaints on the bench</span></div>
+      <div class="stat"><b data-count="600">600</b><span>held out, never used to choose</span></div>
+      <div class="stat"><b data-count="6">6</b><span>rungs, two traps</span></div>
+      <div class="stat"><b data-count="45">45</b><span>min per session</span></div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section class="section">
+    <div class="paths" style="margin-top:0">
+      <h2>The six sessions 🎯 <span style="font-size:.85rem;font-weight:600;color:var(--muted)">· from a pile of text to a signed build-or-buy note</span></h2>
+      <p class="plede">The running case is <strong>Ledgerly</strong>, a constructed consumer-lending fintech whose complaints team must route every complaint to one of six product queues and spot rising issues early. The team is fictional; the complaints are real: 3,000 narratives US consumers sent to the Consumer Financial Protection Bureau in 2023 and agreed to publish. Each session adds one page to Ledgerly's text playbook.</p>
+    </div>
+    <div class="course-grid">
+      <a class="course-card" href="courses/01-text-is-a-table.html" style="--diff:#34D399">
+        <span class="cicon">📄</span>
+        <span class="cnum">Session 1 · foundations</span>
+        <h3>Text is a table you have not built yet</h3>
+        <p>Documents, tokens and a vocabulary; what case folding, stop words, stemming and redaction marks each throw away; Zipf's law in 3,000 real complaints. Build-along: Ledgerly's corpus card.</p>
+        <span class="meta"><span class="pill amber">▶ Start here</span></span>
+      </a>
+      <a class="course-card" href="courses/02-weight-the-words.html" style="--diff:#FBBF24">
+        <span class="cicon">⚖️</span>
+        <span class="cnum">Session 2 · core</span>
+        <h3>Weight the words</h3>
+        <p>Counts against TF-IDF against bigrams; sparse vectors; how big a vocabulary needs to be. Build-along: the top words of all six product queues under three weightings.</p>
+        <span class="meta"><span class="pill">counts, TF-IDF, n-grams</span></span>
+      </a>
+      <a class="course-card" href="courses/03-route-it.html" style="--diff:#FBBF24">
+        <span class="cicon">🧭</span>
+        <span class="cnum">Session 3 · core</span>
+        <h3>Route it: a classifier you can read</h3>
+        <p>Naive Bayes and logistic regression on the word table; reading a model's weights; precision and recall per queue; the confusion table as a routing cost. Build-along: Ledgerly's routing classifier and its error table.</p>
+        <span class="meta"><span class="pill">readable, not magic</span></span>
+      </a>
+      <a class="course-card" href="courses/04-the-text-bench.html" style="--diff:#FB923C">
+        <span class="cicon">🔬</span>
+        <span class="cnum">Session 4 · bench night</span>
+        <h3>The text bench</h3>
+        <p>Six rungs from majority class to a tuned logistic model on 600 held-out complaints, computed in your browser; a training-rows trap, a shuffled-labels break button, and a modelled LLM rung priced, not pretended.</p>
+        <span class="meta"><span class="pill amber">★ the bench</span></span>
+      </a>
+      <a class="course-card" href="courses/05-search-and-themes.html" style="--diff:#FB923C">
+        <span class="cicon">🔎</span>
+        <span class="cnum">Session 5 · stretch</span>
+        <h3>Search and themes</h3>
+        <p>BM25 against cosine search over the corpus; k-means themes that change when you change the seed; a theme that more than quadruples between June and October 2023. Build-along: Ledgerly's theme watchlist.</p>
+        <span class="meta"><span class="pill">find it, then watch it</span></span>
+      </a>
+      <a class="course-card" href="courses/06-when-the-big-model-earns-its-place.html" style="--diff:#F87171">
+        <span class="cicon">🏁</span>
+        <span class="cnum">Session 6 · capstone</span>
+        <h3>When the big model earns its place</h3>
+        <p>Cost per thousand documents, latency, audit and reproducibility against accuracy; the published disagreement on zero-shot LLM labelling against trained classifiers. Capstone: Ledgerly's signed build-or-buy note.</p>
+        <span class="meta"><span class="pill amber">🔒 build or buy</span></span>
+      </a>
+    </div>
+    <div class="diff-legend">
+      <span><i style="background:#34D399"></i>foundations</span>
+      <span><i style="background:#FBBF24"></i>core</span>
+      <span><i style="background:#FB923C"></i>stretch and bench</span>
+      <span><i style="background:#F87171"></i>capstone</span>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="paths" style="margin-top:0">
+      <h2>Your passport 🎫</h2>
+      <p class="plede">Clear all three quiz questions in a session and it gets stamped. Six stamps means you can turn free text into a documented table, weight it, train and read a classifier, run an honest bench with its traps, search and theme a corpus without over-trusting it, and write a build-or-buy note someone can sign. Stamps live in this browser only.</p>
+    </div>
+    <div class="pp-strip"></div>
+  </section>
+
+  <section class="section">
+    <div class="not-this">
+      <h3>What this is not, so you land in the right place 🧭</h3>
+      <table class="clean">
+        <tr><th>If your question is</th><th>Go here instead</th></tr>
+        <tr><td>How is naive Bayes derived, as a method in general?</td><td><a href="https://phoebefu6.github.io/learn-classification-regression-with-phoebe/courses/c6-naive-bayes.html">Classification &amp; Regression, c6 ↗</a></td></tr>
+        <tr><td>How do embeddings and retrieval feed a large language model?</td><td><a href="https://phoebefu6.github.io/learn-rag-with-phoebe/courses/b1-embeddings.html">RAG, b1 ↗</a></td></tr>
+        <tr><td>How do I compute BM25 by hand to retrieve clauses for an internal assistant?</td><td><a href="https://phoebefu6.github.io/learn-ship-internal-ai-assistant-with-phoebe/courses/b2-chunk-index-retrieve.html">Ship an Internal AI Assistant, b2 ↗</a></td></tr>
+        <tr><td>How do I use TF-IDF to recommend "items like this"?</td><td><a href="https://phoebefu6.github.io/learn-recommendation-with-phoebe/courses/b5-content-based.html">Recommendation, b5 ↗</a></td></tr>
+        <tr><td>How do I read a model's output as a consumer, without building it?</td><td><a href="https://phoebefu6.github.io/learn-data-literacy-with-phoebe/courses/07-ml-basics-segment.html">Data Literacy, 07 ↗</a></td></tr>
+        <tr><td>How do I write the survey question before the open-text answers arrive?</td><td><a href="https://phoebefu6.github.io/learn-survey-design-with-phoebe/">Survey Design ↗</a></td></tr>
+        <tr><td><strong>I have a pile of complaints, tickets, reviews or comments and I need to count, route, search and theme them, and decide whether a large model is worth it.</strong></td><td><strong>you are in the right place</strong></td></tr>
+      </table>
+      <p style="margin-top:.7rem;font-size:.86rem;color:var(--muted)"><strong>Classical text analytics, built and checked by you.</strong> Train/test splits and metric definitions are assumed from Intro to ML; embeddings and transformers are linked, not retaught.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="paths">
+      <h2>Choose your path 🗺️</h2>
+      <p class="plede">Three doors into the same playbook.</p>
+      <div class="path"><b>📨 Routing path: send each text to the right team</b>
+        <a class="pstep" href="courses/01-text-is-a-table.html">1</a><span class="parr">→</span>
+        <a class="pstep" href="courses/02-weight-the-words.html">2</a><span class="parr">→</span>
+        <a class="pstep" href="courses/03-route-it.html">3</a><span class="parr">→</span>
+        <a class="pstep" href="courses/04-the-text-bench.html">4</a>
+        <span style="font-size:.82rem;color:var(--muted)">build the table, weight it, train, bench it honestly</span>
+      </div>
+      <div class="path"><b>🔎 Insight path: what are people saying, and is it changing?</b>
+        <a class="pstep" href="courses/01-text-is-a-table.html">1</a><span class="parr">→</span>
+        <a class="pstep" href="courses/02-weight-the-words.html">2</a><span class="parr">→</span>
+        <a class="pstep" href="courses/05-search-and-themes.html">5</a>
+        <span style="font-size:.82rem;color:var(--muted)">build the table, weight it, search and theme it</span>
+      </div>
+      <div class="path"><b>🏁 Decision path: should we just buy the LLM?</b>
+        <a class="pstep" href="courses/01-text-is-a-table.html">1</a><span class="parr">→</span>
+        <a class="pstep" href="courses/04-the-text-bench.html">4</a><span class="parr">→</span>
+        <a class="pstep" href="courses/06-when-the-big-model-earns-its-place.html">6</a>
+        <span style="font-size:.82rem;color:var(--muted)">know the data, see the bench, write the build-or-buy note</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="paths" style="margin-top:0">
+      <h2>What is honest here 🧾</h2>
+      <p class="plede">The bench computes for real; the running case is constructed and labelled; methods are read at their source; contested evidence is taught as a disagreement.</p>
+    </div>
+    <table class="clean">
+      <tr><th>Claim</th><th>Status</th></tr>
+      <tr><td>Every accuracy, F1, search result and theme on the bench</td><td><strong>Really computed</strong> in your browser; a plain-Python reference implementation prints the same values, checked number by number</td></tr>
+      <tr><td>The 3,000 complaints</td><td><strong>Real,</strong> CFPB Consumer Complaint Database narratives from 2023 (public domain, CC0), from a February 2024 snapshot; the current CFPB export no longer carries narratives. Rebalanced across six queues and cut to the first 50 words, as stated on every widget</td></tr>
+      <tr><td>Ledgerly, its team and its playbook</td><td><strong>Constructed</strong> for teaching and labelled on every page</td></tr>
+      <tr><td>The large-language-model rung</td><td><strong>Modelled,</strong> never measured here: it prices the alternative with stated assumptions and placeholder prices you replace; no text is sent anywhere</td></tr>
+      <tr><td>Do zero-shot LLMs beat trained classifiers?</td><td><strong>Contested,</strong> taught as a disagreement between published comparisons, not resolved</td></tr>
+      <tr><td>Naive Bayes, TF-IDF, BM25, Zipf, k-means themes</td><td><strong>Read at source</strong> (Jurafsky and Martin; Manning, Raghavan and Schutze; Robertson and Zaragoza; scikit-learn) and cited by author and date</td></tr>
+    </table>
+  </section>
+
+  <section class="section mm-section">
+    <h2>The knowledge map 🧠</h2>
+    <p class="mm-lede">The whole playbook at a glance - hover a session to spotlight its concepts, click any node to jump in.</p>
+    <div class="mm-wrap"><div id="mindmap"></div></div>
+  </section>
+
+  <footer class="pagefoot">
+    <span>learn-nlp-text-analytics-with-phoebe · by Phoebe Fu &nbsp;·&nbsp; 📚 <a href="https://phoebefu6.github.io/learn-with-phoebe/">Learn with Phoebe ↗</a></span>
+    <span>Neighbours on the shelf: <a href="https://phoebefu6.github.io/learn-classification-regression-with-phoebe/">Classification &amp; Regression ↗</a> &nbsp;·&nbsp; <a href="https://phoebefu6.github.io/learn-rag-with-phoebe/">RAG ↗</a> &nbsp;·&nbsp; <a href="https://phoebefu6.github.io/learn-intro-ml-with-phoebe/">Intro to ML ↗</a></span>
+  </footer>
+
+</main>
+
+<script>
+window.MINDMAP_DATA = {
+ "title": "NLP & Text\nAnalytics",
+ "centerColor": "#3B1A15",
+ "sessions": [
+  {
+   "label": "Text is a table\nyou have not built",
+   "href": "courses/01-text-is-a-table.html",
+   "color": "#34D399",
+   "concepts": [
+    {
+     "label": "From complaint to row",
+     "href": "courses/01-text-is-a-table.html"
+    },
+    {
+     "label": "What normalising deletes",
+     "href": "courses/01-text-is-a-table.html"
+    },
+    {
+     "label": "Zipf's law",
+     "href": "courses/01-text-is-a-table.html"
+    }
+   ]
+  },
+  {
+   "label": "Weight\nthe words",
+   "href": "courses/02-weight-the-words.html",
+   "color": "#FBBF24",
+   "concepts": [
+    {
+     "label": "Counts vs TF-IDF",
+     "href": "courses/02-weight-the-words.html"
+    },
+    {
+     "label": "Bigrams buy back order",
+     "href": "courses/02-weight-the-words.html"
+    },
+    {
+     "label": "Vocabulary size",
+     "href": "courses/02-weight-the-words.html"
+    }
+   ]
+  },
+  {
+   "label": "Route it: a\nclassifier you can read",
+   "href": "courses/03-route-it.html",
+   "color": "#FBBF24",
+   "concepts": [
+    {
+     "label": "Naive Bayes on text",
+     "href": "courses/03-route-it.html"
+    },
+    {
+     "label": "Weights you can read",
+     "href": "courses/03-route-it.html"
+    },
+    {
+     "label": "Errors as routing cost",
+     "href": "courses/03-route-it.html"
+    }
+   ]
+  },
+  {
+   "label": "The text\nbench",
+   "href": "courses/04-the-text-bench.html",
+   "color": "#FB923C",
+   "concepts": [
+    {
+     "label": "Six rungs, two numbers",
+     "href": "courses/04-the-text-bench.html"
+    },
+    {
+     "label": "Tune on validation",
+     "href": "courses/04-the-text-bench.html"
+    },
+    {
+     "label": "Trap and break button",
+     "href": "courses/04-the-text-bench.html"
+    }
+   ]
+  },
+  {
+   "label": "Search and\nthemes",
+   "href": "courses/05-search-and-themes.html",
+   "color": "#FB923C",
+   "concepts": [
+    {
+     "label": "BM25 vs cosine",
+     "href": "courses/05-search-and-themes.html"
+    },
+    {
+     "label": "Unstable themes",
+     "href": "courses/05-search-and-themes.html"
+    },
+    {
+     "label": "Theme drift by month",
+     "href": "courses/05-search-and-themes.html"
+    }
+   ]
+  },
+  {
+   "label": "When the big model\nearns its place",
+   "href": "courses/06-when-the-big-model-earns-its-place.html",
+   "color": "#F87171",
+   "concepts": [
+    {
+     "label": "Cost per thousand",
+     "href": "courses/06-when-the-big-model-earns-its-place.html"
+    },
+    {
+     "label": "The contested evidence",
+     "href": "courses/06-when-the-big-model-earns-its-place.html"
+    },
+    {
+     "label": "Build-or-buy note",
+     "href": "courses/06-when-the-big-model-earns-its-place.html"
+    }
+   ]
+  }
+ ]
+};
+</script>
+<script src="assets/mindmap.js?v=1"></script>
+<script src="assets/app.js?v=1"></script>
+</body>
+</html>
